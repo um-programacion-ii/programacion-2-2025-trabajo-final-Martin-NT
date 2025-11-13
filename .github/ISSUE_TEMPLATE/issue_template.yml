@@ -1,0 +1,72 @@
+name: Tarea de desarrollo
+description: Crear una nueva tarea del trabajo práctico vinculada a un milestone y proyecto
+title: "[Tarea] "
+labels: ["tarea"]
+assignees:
+  - 
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **Completa los siguientes campos para registrar esta tarea correctamente.**  
+        Recordá vincular el issue a un *milestone* y al *project board* correspondiente.
+
+  - type: input
+    id: objetivo
+    attributes:
+      label: Objetivo
+      description: ¿Qué se busca lograr con esta tarea?
+      placeholder: Crear clase Vehiculo con atributos básicos
+    validations:
+      required: true
+
+  - type: textarea
+    id: requisitos
+    attributes:
+      label: Requisitos
+      description: Explicá brevemente los pasos o componentes involucrados.
+      placeholder: |
+        - Crear clase 
+        - Agregar constructor con parámetros
+        - Implementar getters y setters
+        - Probar desde clase Main
+    validations:
+      required: true
+
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Criterios de Aceptación
+      description: Explicá brevemente los pasos o componentes involucrados.
+      placeholder: |
+        - Crear clase 
+        - Agregar constructor con parámetros
+        - Implementar getters y setters
+        - Probar desde clase Main
+    validations:
+      required: true
+
+  - type: dropdown
+    id: complejidad
+    attributes:
+      label: Complejidad
+      description: Estimá la dificultad de la tarea
+      options:
+        - Baja
+        - Media
+        - Alta
+
+  - type: dropdown
+    id: milestone
+    attributes:
+      label: Etapa / Milestone
+      description: Seleccioná a qué etapa del trabajo pertenece esta tarea
+      options:
+        - Etapa 1 - Configuración & Auth
+        - Etapa 2 - Sincronización de Eventos
+        - Etapa 3 - Flujo de Selección de Asientos
+        - Etapa 4 - Venta y Persistencia
+        - Etapa 5 - Sesiones y Cliente Móvil
+        - Etapa 6 - Pruebas y Documentación
+    validations:
+      required: true
