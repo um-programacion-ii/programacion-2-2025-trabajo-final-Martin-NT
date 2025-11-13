@@ -151,3 +151,10 @@ Desktop.ini
 ######################
 coverage/
 .nyc_output/
+
+# Environment variables
+.env
+
+# Documentos personales
+/docs/comandos_usados.md
+/docs/resumen_etapa1.md

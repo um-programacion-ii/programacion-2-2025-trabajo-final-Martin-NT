@@ -108,3 +108,10 @@ jhipster:
 # ===================================================================
 
 # application:
+
+# ===================================================================
+# Configuración del servicio de la cátedra
+# ===================================================================
+catservice:
+  url: ${CAT_SERVICE_URL:http://SERVIDOR_CATEDRA:PUERTO/api}
+  token: ${CAT_SERVICE_TOKEN:}
