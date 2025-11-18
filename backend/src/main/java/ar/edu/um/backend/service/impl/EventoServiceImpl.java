@@ -9,6 +9,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import ar.edu.um.backend.web.rest.errors.EventoAsientosInvalidosException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -34,28 +36,42 @@ public class EventoServiceImpl implements EventoService {
 
     @Override
     public EventoDTO save(EventoDTO eventoDTO) {
-        LOG.debug("Request to save Evento : {}", eventoDTO);
+        LOG.debug("Solicitud para guardar Evento : {}", eventoDTO);
         Evento evento = eventoMapper.toEntity(eventoDTO);
+
+        // Lógica de dominio: validar y recalcular cantidadAsientosTotales
+        validateAndRecalculateAsientos(evento);
+
         evento = eventoRepository.save(evento);
         return eventoMapper.toDto(evento);
     }
 
     @Override
     public EventoDTO update(EventoDTO eventoDTO) {
-        LOG.debug("Request to update Evento : {}", eventoDTO);
+        LOG.debug("Solicitud para actualizar Evento : {}", eventoDTO);
         Evento evento = eventoMapper.toEntity(eventoDTO);
+
+        validateAndRecalculateAsientos(evento);
+
         evento = eventoRepository.save(evento);
         return eventoMapper.toDto(evento);
     }
 
     @Override
     public Optional<EventoDTO> partialUpdate(EventoDTO eventoDTO) {
-        LOG.debug("Request to partially update Evento : {}", eventoDTO);
+        LOG.debug("Solicitud para actualizar parcialmente Evento : {}", eventoDTO);
 
         return eventoRepository
             .findById(eventoDTO.getId())
             .map(existingEvento -> {
+                // PATCH: actualiza solo los campos enviados en el DTO (parche parcial).
+                // Los campos null no se modifican. Aplica la regla de negocio si filas/columnas están presentes.
                 eventoMapper.partialUpdate(existingEvento, eventoDTO);
+
+                // Si ya tenemos fila y columna, aplicamos la lógica de dominio
+                if (existingEvento.getFilaAsientos() != null && existingEvento.getColumnaAsientos() != null) {
+                    validateAndRecalculateAsientos(existingEvento);
+                }
 
                 return existingEvento;
             })
@@ -66,20 +82,61 @@ public class EventoServiceImpl implements EventoService {
     @Override
     @Transactional(readOnly = true)
     public List<EventoDTO> findAll() {
-        LOG.debug("Request to get all Eventos");
+        LOG.debug("Solicitud para obtener todos los Eventos");
         return eventoRepository.findAll().stream().map(eventoMapper::toDto).collect(Collectors.toCollection(LinkedList::new));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<EventoDTO> findOne(Long id) {
-        LOG.debug("Request to get Evento : {}", id);
+        LOG.debug("Solicitud para obtener Evento : {}", id);
         return eventoRepository.findById(id).map(eventoMapper::toDto);
     }
 
     @Override
     public void delete(Long id) {
-        LOG.debug("Request to delete Evento : {}", id);
+        LOG.debug("Solicitud para eliminar Evento : {}", id);
         eventoRepository.deleteById(id);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EventoDTO> findAllOrderedByFechaHora() {
+        LOG.debug("Solicitud para obtener todos los Eventos ordenados por fecha/hora");
+        return eventoRepository
+            .findAllByOrderByFechaAscHoraAsc()
+            .stream()
+            .map(eventoMapper::toDto)
+            .collect(Collectors.toCollection(LinkedList::new));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EventoDTO> findAllByOrderByTituloAsc() {
+        LOG.debug("Solicitud para obtener todos los Eventos ordenados por título");
+        return eventoRepository
+            .findAllByOrderByTituloAsc()
+            .stream()
+            .map(eventoMapper::toDto)
+            .collect(Collectors.toCollection(LinkedList::new));
+    }
+
+    // Metodo que valida que filaAsientos y columnaAsientos sean ≠ null & > 0
+    // y recalcula cantidadAsientosTotales = filaAsientos × columnaAsientos
+    private void validateAndRecalculateAsientos(Evento evento) {
+        Integer filas = evento.getFilaAsientos();
+        Integer columnas = evento.getColumnaAsientos();
+
+        if (filas == null || columnas == null) {
+            throw new EventoAsientosInvalidosException("filaAsientos y columnaAsientos no pueden ser nulos");
+        }
+
+        if (filas <= 0 || columnas <= 0) {
+            throw new EventoAsientosInvalidosException("filaAsientos y columnaAsientos deben ser mayores a cero");
+        }
+
+        int total = filas * columnas;
+        evento.setCantidadAsientosTotales(total);
+    }
+
 }
