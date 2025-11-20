@@ -1,0 +1,24 @@
+#application.yml
+
+server:
+  port: 8081 # Puerto donde correrá el proxy-service. No interfiere con el backend (8080).
+
+spring:
+  application:
+    name: proxy-service # Nombre interno de la aplicación
+
+  data:
+    redis:
+      host: ${REDIS_HOST:192.168.194.250}   # Host de Redis remoto (inyectado por .env). Si no existe, usa 192.168.194.250.
+      port: ${REDIS_PORT:6379}              # Puerto de Redis (por defecto 6379).
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKER:192.168.194.250:9092}  # Servidores Kafka. Si .env no existe, usa el de la cátedra.
+    consumer:
+      group-id: ${PROXY_GROUP_ID:grupo-alumno}  # Cada alumno debe tener un groupId único para leer Kafka sin interferencias.
+      auto-offset-reset: earliest               # Si nunca consumió, empieza a consumir desde el primer mensaje disponible.
+    listener:
+      missing-topics-fatal: false               # Si el topic no existe todavía, no rompe la aplicación.
+
+catservice:
+  url: ${CAT_SERVICE_URL:http://192.168.194.250:8080/api}  # URL base del servidor de la cátedra. Usado para leer eventos.
