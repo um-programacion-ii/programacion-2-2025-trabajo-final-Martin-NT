@@ -7,7 +7,8 @@ import org.springframework.stereotype.Service;
 /**
  * Fachada sobre el cliente Feign CatServiceFeignClient.
  *
- * Delega las llamadas en Feign.
+ * Delega las llamadas HTTP hacia la cátedra y centraliza logs y manejo básico de errores.
+ * La autenticación (JWT) se aplica a nivel de configuración Feign (CatServiceFeignConfig).
  */
 @Service
 public class CatServiceClient {
