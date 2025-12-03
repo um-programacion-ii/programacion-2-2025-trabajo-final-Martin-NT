@@ -1,5 +1,7 @@
 package ar.edu.um.proxyservice.web.rest;
 import ar.edu.um.proxyservice.service.CatServiceClient;
+import ar.edu.um.proxyservice.service.EstadoAsientosRedisService;
+import ar.edu.um.proxyservice.service.dto.EstadoAsientosRemotoDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -12,13 +14,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController //le dice a Spring que esta clase expone endpoints REST
 @RequestMapping("/api/proxy") //todos los endpoints de esta clase van a empezar con /api/proxy
 public class ProxyEventosResource {
-
     private static final Logger log = LoggerFactory.getLogger(ProxyEventosResource.class);
 
     private final CatServiceClient catServiceClient;
+    private final EstadoAsientosRedisService estadoAsientosRedisService;
 
-    public ProxyEventosResource(CatServiceClient catServiceClient) {
+    public ProxyEventosResource(CatServiceClient catServiceClient, EstadoAsientosRedisService estadoAsientosRedisService) {
         this.catServiceClient = catServiceClient;
+        this.estadoAsientosRedisService = estadoAsientosRedisService;
     }
 
     /**
@@ -90,7 +93,7 @@ public class ProxyEventosResource {
      */
     @GetMapping("/eventos/forzar-actualizacion")
     public ResponseEntity<String> forzarActualizacion() {
-        log.info("[ProxyEventosResource] POST /api/proxy/eventos/forzar-actualizacion");
+        log.info("[ProxyEventosResource] GET /api/proxy/eventos/forzar-actualizacion");
 
         String body = catServiceClient.forzarActualizacion();
 
@@ -105,7 +108,32 @@ public class ProxyEventosResource {
         return ResponseEntity.ok(body);
     }
 
+    /**
+     * GET /api/proxy/eventos/{id}/estado-asientos
+     *
+     * Devuelve el estado de asientos de un evento leyendo el Redis REMOTO de la cátedra
+     * a través de EstadoAsientosRedisService.
+     *
+     * - Si no hay datos en Redis → devuelve DTO con lista vacía.
+     * - Si hay error de parseo → también devuelve DTO seguro (lista vacía).
+     */
+    @GetMapping("/eventos/{id}/estado-asientos")
+    public ResponseEntity<?> obtenerEstadoAsientos(@PathVariable Long id) {
+        log.info("[ProxyEventosResource] GET /api/proxy/eventos/{}/estado-asientos", id);
 
+        try {
+            EstadoAsientosRemotoDTO dto = estadoAsientosRedisService.obtenerEstadoAsientos(id);
+
+            // dto NUNCA es null por cómo está implementado el service:
+            // siempre devuelve un objeto con lista (tal vez vacía).
+            return ResponseEntity.ok(dto);
+
+        } catch (Exception e) {
+            log.error("[ProxyEventosResource] Error consultando Redis para evento {}", id, e);
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body("{\"error\":\"Error consultando Redis para el estado de asientos\"}");
+        }
+    }
 
 
 }
