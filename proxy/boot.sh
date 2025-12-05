@@ -3,24 +3,29 @@
 set -e
 
 cd "$(dirname "$0")"
-echo "== Inicio del proxy =="
 
-# Cargar .env de nuevo por las dudas (por si tocaste algo desde la última instalación)
+GREEN="\033[1;32m"
+BLUE="\033[1;34m"
+YELLOW="\033[1;33m"
+RESET="\033[0m"
+
+echo -e "${GREEN}🚀 Iniciando proxy-service...${RESET}"
+
+# Cargar .env
 if [ -f .env ]; then
-  echo "Cargando variables desde .env..."
+  echo -e "${BLUE}📦 Cargando variables desde .env...${RESET}"
   set -a
   source .env
   set +a
 else
-  echo "AVISO: No se encontró .env en $(pwd)"
+  echo -e "${YELLOW}⚠️  AVISO: No se encontró .env en $(pwd)${RESET}"
 fi
 
-echo "Usando configuración:"
-echo "  REDIS_HOST=${REDIS_HOST:-NO DEFINIDO}"
-echo "  REDIS_PORT=${REDIS_PORT:-NO DEFINIDO}"
-echo "  KAFKA_BROKER=${KAFKA_BROKER:-NO DEFINIDO}"
-echo "  CAT_SERVICE_URL=${CAT_SERVICE_URL:-NO DEFINIDO}"
-echo "  PROXY_GROUP_ID=${PROXY_GROUP_ID:-NO DEFINIDO}"
+echo -e "${BLUE}🔧 Configuración activa:${RESET}"
+echo "   • Redis:  ${REDIS_HOST:-NO DEFINIDO}:${REDIS_PORT:-NO DEFINIDO}"
+echo "   • Kafka:  ${KAFKA_BROKER:-NO DEFINIDO}"
+echo "   • Cátedra: ${CAT_SERVICE_URL:-NO DEFINIDO}"
+echo "   • Group ID: ${PROXY_GROUP_ID:-NO DEFINIDO}"
 
-echo "Levantando proxy en puerto 8081..."
+echo -e "${GREEN}🌐 Levantando proxy en puerto 8081...${RESET}"
 ./mvnw spring-boot:run

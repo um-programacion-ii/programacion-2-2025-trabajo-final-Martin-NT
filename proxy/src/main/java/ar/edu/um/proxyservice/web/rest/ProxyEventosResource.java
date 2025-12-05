@@ -32,12 +32,12 @@ public class ProxyEventosResource {
      */
     @GetMapping("/eventos-resumidos")
     public ResponseEntity<String> listarEventosResumidos() {
-        log.info("[ProxyEventosResource] GET /api/proxy/eventos-resumidos");
+        log.info("🌐 [Proxy] GET /api/proxy/eventos-resumidos");
 
         String body = catServiceClient.listarEventosResumidos();
 
         if (body == null) {
-            log.warn("[ProxyEventosResource] No se pudo obtener eventos-resumidos desde la cátedra");
+            log.warn("🌐 [Proxy] No se pudo obtener eventos-resumidos desde la cátedra");
             return ResponseEntity
                     .status(HttpStatus.BAD_GATEWAY)
                     .body("{\"error\":\"No se pudo obtener eventos-resumidos desde la cátedra\"}");
@@ -52,12 +52,12 @@ public class ProxyEventosResource {
      */
     @GetMapping("/eventos")
     public ResponseEntity<String> listarEventosCompletos() {
-        log.info("[ProxyEventosResource] GET /api/proxy/eventos");
+        log.info("🌐 [Proxy] GET /api/proxy/eventos");
 
         String body = catServiceClient.listarEventosCompletos();
 
         if (body == null) {
-            log.warn("[ProxyEventosResource] No se pudo obtener eventos completos desde la cátedra");
+            log.warn("🌐 [Proxy] No se pudo obtener eventos completos desde la cátedra");
             return ResponseEntity
                     .status(HttpStatus.BAD_GATEWAY)
                     .body("{\"error\":\"No se pudo obtener eventos desde la cátedra\"}");
@@ -72,12 +72,12 @@ public class ProxyEventosResource {
      */
     @GetMapping("/eventos/{id}")
     public ResponseEntity<String> obtenerEventoPorId(@PathVariable Long id) {
-        log.info("[ProxyEventosResource] GET /api/proxy/eventos/{}", id);
+        log.info("🌐 [Proxy] GET /api/proxy/eventos/{}", id);
 
         String body = catServiceClient.obtenerEventoPorId(id);
 
         if (body == null) {
-            log.warn("[ProxyEventosResource] No se pudo obtener evento {} desde la cátedra", id);
+            log.warn("🌐 [Proxy] No se pudo obtener evento {} desde la cátedra", id);
             return ResponseEntity
                     .status(HttpStatus.BAD_GATEWAY)
                     .body("{\"error\":\"No se pudo obtener el evento desde la cátedra\"}");
@@ -93,12 +93,12 @@ public class ProxyEventosResource {
      */
     @GetMapping("/eventos/forzar-actualizacion")
     public ResponseEntity<String> forzarActualizacion() {
-        log.info("[ProxyEventosResource] GET /api/proxy/eventos/forzar-actualizacion");
+        log.info("🌐 [Proxy] GET /api/proxy/eventos/forzar-actualizacion");
 
         String body = catServiceClient.forzarActualizacion();
 
         if (body == null) {
-            log.warn("[ProxyEventosResource] Error al invocar forzar-actualizacion en la cátedra");
+            log.warn("🌐 [Proxy] Error al invocar forzar-actualizacion en la cátedra");
             return ResponseEntity
                     .status(HttpStatus.BAD_GATEWAY)
                     .body("{\"error\":\"No se pudo forzar la actualización en la cátedra\"}");
@@ -119,7 +119,7 @@ public class ProxyEventosResource {
      */
     @GetMapping("/eventos/{id}/estado-asientos")
     public ResponseEntity<?> obtenerEstadoAsientos(@PathVariable Long id) {
-        log.info("[ProxyEventosResource] GET /api/proxy/eventos/{}/estado-asientos", id);
+        log.info("🌐 [Proxy] GET /api/proxy/eventos/{}/estado-asientos", id);
 
         try {
             EstadoAsientosRemotoDTO dto = estadoAsientosRedisService.obtenerEstadoAsientos(id);
@@ -129,7 +129,7 @@ public class ProxyEventosResource {
             return ResponseEntity.ok(dto);
 
         } catch (Exception e) {
-            log.error("[ProxyEventosResource] Error consultando Redis para evento {}", id, e);
+            log.error("🌐 [Proxy] Error consultando Redis para evento {}", id, e);
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .body("{\"error\":\"Error consultando Redis para el estado de asientos\"}");
         }
