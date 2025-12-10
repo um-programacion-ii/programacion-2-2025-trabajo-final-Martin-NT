@@ -185,7 +185,7 @@ redis-cli -h localhost -p 6379 ping
 ```
 ---
 
-# PostgreSQL Manual (opcional / no requerido)
+# PostgreSQL Manual (opcional / no requerido) (borrar use docker)
 
 Solo si deseas instalar PostgreSQL fuera de Docker.
 
@@ -686,3 +686,89 @@ http://192.168.194.250:8080/
      - `[Sync] Creando evento nuevo externalId=1`
      - `[Sync] Sincronización finalizada correctamente.`
      - `[Admin-Sync] Sincronización manual finalizada.`
+
+Usar h2
+
+SPRING_PROFILES_ACTIVE=dev ./mvnw
+
+Y entrás a http://localhost:8080/h2-console con:
+
+JDBC URL: jdbc:h2:mem:tp2025
+User: sa
+Password: vacío
+
+
+# PostgreSQL (con Docker)
+
+## 1. Cómo instalar / crear el contenedor
+
+> Objetivo: tener un contenedor Docker llamado `postgres-tpfinal` con la base `backendCatedra`.
+
+### Descargar imagen y crear contenedor
+```bash
+docker run --name postgres-tpfinal \
+  -e POSTGRES_USER=backendCatedra \
+  -e POSTGRES_PASSWORD=backendCatedra \
+  -e POSTGRES_DB=backendCatedra \
+  -p 5432:5432 \
+  -d postgres:15
+```
+
+## 2. Comandos básicos de Docker para Postgres
+
+- Ver contenedores ejecutándose
+docker ps
+
+- Ver todos los contenedores (incluso detenidos)
+docker ps -a
+
+- Ver logs del contenedor
+docker logs postgres-tpfinal
+
+- Detener el contenedor
+docker stop postgres-tpfinal
+
+- Volver a iniciarlo
+docker start postgres-tpfinal
+
+- Eliminar el contenedor
+docker rm postgres-tpfinal
+
+## 3. Conectarse a PostgreSQL (psql dentro del contenedor)
+
+- Abrir psql dentro del contenedor
+docker exec -it postgres-tpfinal psql -U backendCatedra backendCatedra
+
+- Para salir de psql
+\q
+
+## 4. Comandos útiles dentro de psql
+
+### 4.1. Información general
+-- Ver todas las bases de datos
+\l
+
+-- Conectarse a otra base
+\c nombre_base
+
+-- Ver todas las tablas del esquema actual
+\dt
+
+-- Ver tablas de un esquema específico (ej. public)
+\dt public.*
+
+-- Ver definición de una tabla (estructura)
+\d nombre_tabla
+
+### 4.2. Consultar datos
+-- Ver todos los registros de una tabla
+SELECT * FROM evento;
+
+-- Limitar resultados
+SELECT * FROM evento LIMIT 10;
+
+-- Filtros simples
+SELECT * FROM evento WHERE activo = true;
+
+-- Ordenar resultados
+SELECT * FROM evento ORDER BY fecha DESC;
