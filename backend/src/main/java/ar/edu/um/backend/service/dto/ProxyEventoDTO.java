@@ -1,4 +1,6 @@
 package ar.edu.um.backend.service.dto;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -25,8 +27,9 @@ public class ProxyEventoDTO {
     private String organizador;
     private String presentadores;
     private Integer cantidadAsientosTotales;
-    private Integer filaAsientos; //Si es null se le asigna el valor 0
-    private Integer columnaAsientos; //Si es null se le asigna el valor 0
+    private Integer filaAsientos;
+    @JsonProperty("columnAsientos")  // Nombre EXACTO del JSON de la cátedra
+    private Integer columnaAsientos;
 
     // GETTERS & SETTERS
     public Long getId() { return id; }

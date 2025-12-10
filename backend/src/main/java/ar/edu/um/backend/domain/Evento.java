@@ -44,6 +44,10 @@ public class Evento implements Serializable {
     private Long externalId;
 
     @NotNull
+    @Column(name = "activo", nullable = false)
+    private Boolean activo = true; // todos los eventos nuevos están activos
+
+    @NotNull
     @Column(name = "titulo", nullable = false)
     private String titulo;
 
@@ -110,6 +114,16 @@ public class Evento implements Serializable {
     private Set<Venta> ventas = new HashSet<>();
 
     // GETTERS & SETTERS GENERADOS POR JHIPSTER
+    public Boolean getActivo() {
+        return activo;
+    }
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
+    }
+    public Evento activo(Boolean activo) {
+        this.activo = activo;
+        return this;
+    }
 
     public Long getId() { return this.id; }
     public void setId(Long id) { this.id = id; }
@@ -207,6 +221,7 @@ public class Evento implements Serializable {
             ", cantidadAsientosTotales=" + cantidadAsientosTotales +
             ", filaAsientos=" + filaAsientos +
             ", columnaAsientos=" + columnaAsientos +
-            '}';
+            ", activo=" + getActivo() +
+            "}";
     }
 }

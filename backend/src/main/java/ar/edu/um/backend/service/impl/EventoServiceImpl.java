@@ -39,6 +39,11 @@ public class EventoServiceImpl implements EventoService {
         LOG.debug("Solicitud para guardar Evento : {}", eventoDTO);
         Evento evento = eventoMapper.toEntity(eventoDTO);
 
+        // Si viene sin info, por defecto se considera activo
+        if (evento.getActivo() == null) {
+            evento.setActivo(true);
+        }
+
         // Lógica de dominio: validar y recalcular cantidadAsientosTotales
         validateAndRecalculateAsientos(evento);
 
@@ -51,6 +56,10 @@ public class EventoServiceImpl implements EventoService {
         LOG.debug("Solicitud para actualizar Evento : {}", eventoDTO);
         Evento evento = eventoMapper.toEntity(eventoDTO);
 
+        if (evento.getActivo() == null) {
+            evento.setActivo(true);
+        }
+
         validateAndRecalculateAsientos(evento);
 
         evento = eventoRepository.save(evento);
@@ -59,10 +68,10 @@ public class EventoServiceImpl implements EventoService {
 
     @Override
     public Optional<EventoDTO> partialUpdate(EventoDTO eventoDTO) {
-        LOG.debug("Solicitud para actualizar parcialmente Evento : {}", eventoDTO);
+        LOG.debug("Solicitud para actualizar parcialmente Evento ACTIVO : {}", eventoDTO);
 
         return eventoRepository
-            .findById(eventoDTO.getId())
+            .findByIdAndActivoTrue(eventoDTO.getId())   // 👈 sólo si está activo
             .map(existingEvento -> {
                 // PATCH: actualiza solo los campos enviados en el DTO (parche parcial).
                 // Los campos null no se modifican. Aplica la regla de negocio si filas/columnas están presentes.
@@ -82,15 +91,19 @@ public class EventoServiceImpl implements EventoService {
     @Override
     @Transactional(readOnly = true)
     public List<EventoDTO> findAll() {
-        LOG.debug("Solicitud para obtener todos los Eventos");
-        return eventoRepository.findAll().stream().map(eventoMapper::toDto).collect(Collectors.toCollection(LinkedList::new));
+        LOG.debug("Solicitud para obtener todos los Eventos ACTIVOS");
+        return eventoRepository
+            .findAllByActivoTrueOrderByFechaAscHoraAsc()
+            .stream()
+            .map(eventoMapper::toDto)
+            .collect(Collectors.toCollection(LinkedList::new));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<EventoDTO> findOne(Long id) {
-        LOG.debug("Solicitud para obtener Evento : {}", id);
-        return eventoRepository.findById(id).map(eventoMapper::toDto);
+        LOG.debug("Solicitud para obtener Evento ACTIVO : {}", id);
+        return eventoRepository.findByIdAndActivoTrue(id).map(eventoMapper::toDto);
     }
 
     @Override
@@ -102,9 +115,9 @@ public class EventoServiceImpl implements EventoService {
     @Override
     @Transactional(readOnly = true)
     public List<EventoDTO> findAllOrderedByFechaHora() {
-        LOG.debug("Solicitud para obtener todos los Eventos ordenados por fecha/hora");
+        LOG.debug("Solicitud para obtener todos los Eventos ACTIVOS ordenados por fecha/hora");
         return eventoRepository
-            .findAllByOrderByFechaAscHoraAsc()
+            .findAllByActivoTrueOrderByFechaAscHoraAsc()
             .stream()
             .map(eventoMapper::toDto)
             .collect(Collectors.toCollection(LinkedList::new));
@@ -113,13 +126,14 @@ public class EventoServiceImpl implements EventoService {
     @Override
     @Transactional(readOnly = true)
     public List<EventoDTO> findAllByOrderByTituloAsc() {
-        LOG.debug("Solicitud para obtener todos los Eventos ordenados por título");
+        LOG.debug("Solicitud para obtener todos los Eventos ACTIVOS ordenados por título");
         return eventoRepository
-            .findAllByOrderByTituloAsc()
+            .findAllByActivoTrueOrderByTituloAsc()
             .stream()
             .map(eventoMapper::toDto)
             .collect(Collectors.toCollection(LinkedList::new));
     }
+
 
     // Metodo que valida que filaAsientos y columnaAsientos sean ≠ null & > 0
     // y recalcula cantidadAsientosTotales = filaAsientos × columnaAsientos
@@ -138,5 +152,4 @@ public class EventoServiceImpl implements EventoService {
         int total = filas * columnas;
         evento.setCantidadAsientosTotales(total);
     }
-
 }
