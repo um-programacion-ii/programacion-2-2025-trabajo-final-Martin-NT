@@ -143,9 +143,10 @@ public class EventoResource {
      */
     @GetMapping("")
     public List<EventoDTO> getAllEventos() {
-        LOG.debug("REST request to get all Active Eventos");
+        LOG.info("[EventoResource] GET /api/eventos (devolviendo solo eventos activos)");
         return eventoService.findAll();
     }
+
 
     /**
      * {@code GET  /eventos/:id} : get the "id" evento.

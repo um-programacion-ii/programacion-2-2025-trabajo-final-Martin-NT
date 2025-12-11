@@ -772,3 +772,32 @@ SELECT * FROM evento WHERE activo = true;
 
 -- Ordenar resultados
 SELECT * FROM evento ORDER BY fecha DESC;
+
+
+### Consultas
+
+-- 1) Ver capacidad y externalId de todos los eventos
+SELECT id, external_id, fila_asientos, columna_asientos, activo
+FROM evento
+ORDER BY id;
+
+-- 2) Ver los asientos de un evento local (ej: 1001)
+SELECT id, fila, columna, estado, persona_actual
+FROM asiento
+WHERE evento_id = 1001
+ORDER BY fila, columna;
+
+-- 3) Resumen por estado de los asientos de un evento
+SELECT estado, COUNT(*) AS cantidad
+FROM asiento
+WHERE evento_id = 1001
+GROUP BY estado
+ORDER BY estado;
+
+-- 4) Ver solo los asientos “raros” (por encima del rango teórico)
+-- (útil si sospechás que tu evento tiene filas/columnas mal seteadas)
+SELECT a.*
+FROM asiento a
+JOIN evento e ON a.evento_id = e.id
+WHERE a.evento_id = 1001
+  AND (a.fila > e.fila_asientos OR a.columna > e.columna_asientos);
