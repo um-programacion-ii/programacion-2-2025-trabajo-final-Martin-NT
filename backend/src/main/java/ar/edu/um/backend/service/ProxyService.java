@@ -1,5 +1,4 @@
 package ar.edu.um.backend.service;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -19,6 +18,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
  *   - /api/proxy/eventos/{id}
  *   - /api/proxy/forzar-actualizacion
  *   - /api/proxy/eventos/{id}/asientos
+ *   - /api/proxy/eventos/{id}/estado-asientos
  *
  * Todas las llamadas usan el WebClient ya preconfigurado en ProxyWebClientConfig,
  * incluyendo el token JWT configurado en PROXY_TOKEN.
@@ -139,5 +139,13 @@ public class ProxyService {
      */
     public String listarAsientosDeEvento(Long externalId) {
         return doGet("/eventos/" + externalId + "/asientos");
+    }
+
+    /**
+     * GET /api/proxy/eventos/{id}/estado-asientos
+     * Obtiene el estado de asientos de un evento desde Redis (vía proxy).
+     */
+    public String listarEstadoAsientosRedis(Long externalId) {
+        return doGet("/eventos/" + externalId + "/estado-asientos");
     }
 }

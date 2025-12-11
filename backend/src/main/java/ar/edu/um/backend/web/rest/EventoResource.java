@@ -1,7 +1,8 @@
 package ar.edu.um.backend.web.rest;
-
 import ar.edu.um.backend.repository.EventoRepository;
+import ar.edu.um.backend.service.AsientoEstadoService;
 import ar.edu.um.backend.service.EventoService;
+import ar.edu.um.backend.service.dto.AsientoEstadoDTO;
 import ar.edu.um.backend.service.dto.EventoDTO;
 import ar.edu.um.backend.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
@@ -21,6 +22,10 @@ import tech.jhipster.web.util.ResponseUtil;
 
 /**
  * REST controller for managing {@link ar.edu.um.backend.domain.Evento}.
+ *
+ * Además de los endpoints CRUD generados por JHipster, expone:
+ *   - GET /api/eventos/{id}/asientos → mapa de asientos en tiempo real
+ *     combinando DB + Redis (via AsientoEstadoService).
  */
 @RestController
 @RequestMapping("/api/eventos")
@@ -34,12 +39,13 @@ public class EventoResource {
     private String applicationName;
 
     private final EventoService eventoService;
-
     private final EventoRepository eventoRepository;
+    private final AsientoEstadoService asientoEstadoService;
 
-    public EventoResource(EventoService eventoService, EventoRepository eventoRepository) {
+    public EventoResource(EventoService eventoService, EventoRepository eventoRepository, AsientoEstadoService asientoEstadoService) {
         this.eventoService = eventoService;
         this.eventoRepository = eventoRepository;
+        this.asientoEstadoService = asientoEstadoService;
     }
 
     /**
@@ -168,4 +174,22 @@ public class EventoResource {
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, true, ENTITY_NAME, id.toString()))
             .build();
     }
+
+
+
+    /**
+     * GET  /api/eventos/{id}/asientos
+     *
+     * Devuelve el mapa de asientos del evento en tiempo real,
+     * combinando estado persistido (DB) + Redis (bloqueos vigentes/expirados).
+     */
+    @GetMapping("/{id}/asientos")
+    public ResponseEntity<List<AsientoEstadoDTO>> obtenerEstadoActualAsientos(@PathVariable Long id) {
+        LOG.info("[EventoResource] GET /api/eventos/{}/asientos (mapa en tiempo real)", id);
+
+        List<AsientoEstadoDTO> mapa = asientoEstadoService.obtenerEstadoActualDeAsientos(id);
+
+        return ResponseEntity.ok(mapa);
+    }
+
 }
