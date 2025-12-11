@@ -29,6 +29,9 @@ public class Venta implements Serializable {
     @Column(name = "id")
     private Long id;
 
+    @Column(name = "external_id")
+    private Long externalId;
+
     @NotNull
     @Column(name = "fecha_venta", nullable = false)
     private LocalDate fechaVenta;
@@ -77,6 +80,19 @@ public class Venta implements Serializable {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getExternalId() {
+        return externalId;
+    }
+
+    public void setExternalId(Long externalId) {
+        this.externalId = externalId;
+    }
+
+    public Venta externalId(Long externalId) {
+        this.externalId = externalId;
+        return this;
     }
 
     public LocalDate getFechaVenta() {

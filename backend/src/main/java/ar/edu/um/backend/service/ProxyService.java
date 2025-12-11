@@ -1,4 +1,5 @@
 package ar.edu.um.backend.service;
+import ar.edu.um.backend.service.dto.ProxyVentaDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 public class ProxyService {
 
     private static final Logger log = LoggerFactory.getLogger(ProxyService.class);
-
     /**
      * WebClient inyectado desde ProxyWebClientConfig.
      *
@@ -42,7 +42,7 @@ public class ProxyService {
     }
 
     /**
-     * Método interno reutilizable para realizar GET al proxy.
+     * Metodo interno reutilizable para realizar GET al proxy.
      *
      * Maneja:
      *  - logs de request/response,
@@ -88,6 +88,60 @@ public class ProxyService {
             return null;
         }
     }
+
+    /**
+     * Metodo interno reutilizable para realizar POST al proxy.
+     *
+     * Loguea el endpoint y el tipo de body.
+     * Hace el POST con el proxyWebClient (ya lleva el Bearer).
+     * Loguea la respuesta o el error (HTTP o de conexión).
+     *
+     * Maneja:
+     *  - logs de request/response,
+     *  - errores HTTP (4xx/5xx),
+     *  - otros errores de conexión/timeout.
+     *
+     * @param path ruta relativa dentro de /api/proxy (ej: "/eventos/1/venta").
+     * @param body cuerpo a enviar como JSON (DTO).
+     * @return el body como String, o null si hubo error.
+     */
+    private String doPost(String path, Object body) {
+        try {
+            log.info(
+                "🌐 [Proxy-Backend] POST {} (bodyClass={})",
+                path,
+                body != null ? body.getClass().getSimpleName() : "null"
+            );
+
+            String response = proxyWebClient
+                .post()
+                .uri(path)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+            log.info(
+                "📩 [Proxy-Backend] Respuesta OK POST {} (bytes={})",
+                path,
+                response != null ? response.length() : 0
+            );
+
+            return response;
+        } catch (WebClientResponseException e) {
+            log.error(
+                "❌ [Proxy-Backend] Error HTTP {} en POST {} → {}",
+                e.getRawStatusCode(),
+                path,
+                e.getResponseBodyAsString()
+            );
+            return null;
+        } catch (Exception e) {
+            log.error("💥 [Proxy-Backend] Error inesperado al hacer POST {}", path, e);
+            return null;
+        }
+    }
+
 
     /**
      * Llama a GET /api/proxy/eventos-resumidos en el proxy-service.
@@ -148,4 +202,34 @@ public class ProxyService {
     public String listarEstadoAsientosRedis(Long externalId) {
         return doGet("/eventos/" + externalId + "/estado-asientos");
     }
+
+    /**
+     * POST /api/proxy/eventos/{externalId}/venta
+     *
+     * Envía una venta real al proxy, que a su vez la manda a la cátedra.
+     * Usa el DTO ProxyVentaDTO como cuerpo.
+     *
+     * @param externalId ID del evento en la cátedra.
+     * @param venta DTO con cliente, asientos y total.
+     * @return JSON crudo devuelto por el proxy/cátedra, o null si hubo error.
+     */
+    public String crearVentaEnProxy(Long externalId, ProxyVentaDTO venta) {
+        log.info(
+            "💸 [Proxy-Backend] Enviando venta al proxy para externalId={}, asientos={}",
+            externalId,
+            venta != null && venta.getAsientos() != null ? venta.getAsientos().size() : 0
+        );
+
+        String path = "/eventos/" + externalId + "/venta";
+        String respuesta = doPost(path, venta);
+
+        log.info(
+            "💸 [Proxy-Backend] Respuesta de venta desde proxy para externalId={} -> {}",
+            externalId,
+            respuesta
+        );
+
+        return respuesta;
+    }
+
 }

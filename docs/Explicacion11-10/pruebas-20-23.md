@@ -5,13 +5,13 @@ A continuación se detallan las pruebas **reales** que podés mostrar en vivo de
 - Levantar Backend con ./mvnw
 - Levantar Proxy con ./boot.sh
 
----
-
 ## Issues
 - Integración del backend con el proxy y sincronización local de eventos #20
 - Baja lógica de eventos eliminados en la cátedra #21
 - Sincronización de asientos del evento #22
 - Integración con Redis para estado de asientos en tiempo real #23
+
+---
 
 ## 🔹 1. Probar sincronización manual  (#20 - #21 - #22)
 

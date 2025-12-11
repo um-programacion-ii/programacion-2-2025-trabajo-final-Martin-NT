@@ -175,12 +175,12 @@ public class VentaServiceImpl implements VentaService {
     }
 
     /**
-     * Aplica las reglas de post-procesamiento cuando la venta es EXITOSA:
+     * Aplica las reglas de post-procesamiento cuando la venta está CONFIRMADA:
      * - Marca todos los asientos asociados como VENDIDO.
      */
     private void procesarVentaExitosa(Venta venta) {
-        if (venta.getEstado() != VentaEstado.EXITOSA) {
-            return; // si no es EXITOSA, no hacemos nada
+        if (venta.getEstado() != VentaEstado.CONFIRMADA) {
+            return; // si no está CONFIRMADA, no hacemos nada
         }
 
         for (Asiento asiento : venta.getAsientos()) {

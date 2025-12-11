@@ -53,7 +53,7 @@ class VentaResourceIT {
     private static final LocalDate UPDATED_FECHA_VENTA = LocalDate.now(ZoneId.systemDefault());
 
     private static final VentaEstado DEFAULT_ESTADO = VentaEstado.PENDIENTE;
-    private static final VentaEstado UPDATED_ESTADO = VentaEstado.EXITOSA;
+    private static final VentaEstado UPDATED_ESTADO = VentaEstado.CONFIRMADA;
 
     private static final String DEFAULT_DESCRIPCION = "AAAAAAAAAA";
     private static final String UPDATED_DESCRIPCION = "BBBBBBBBBB";

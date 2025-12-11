@@ -3,6 +3,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashSet;
@@ -83,6 +84,19 @@ public class Evento implements Serializable {
     @NotNull
     @Column(name = "columna_asientos", nullable = false)
     private Integer columnaAsientos;
+
+    /**
+     * precision = 21
+     * Significa que que el número puede tener hasta 21 dígitos en total
+     * (sumando los que están antes y después de la coma).
+     *
+     * scale = 2
+     * Significa de esos dígitos, 2 deben estar después de la coma decimal.
+     */
+    @NotNull
+    @Column(name = "precio_entrada", precision = 21, scale = 2, nullable = false)
+    private BigDecimal precioEntrada;
+
 
     /**
      * RELACIÓN: Evento 1 —— N Asientos
@@ -179,6 +193,19 @@ public class Evento implements Serializable {
     public Long getExternalId() { return externalId; }
     public void setExternalId(Long externalId) { this.externalId = externalId; }
 
+    public BigDecimal getPrecioEntrada() {
+        return this.precioEntrada;
+    }
+
+    public void setPrecioEntrada(BigDecimal precioEntrada) {
+        this.precioEntrada = precioEntrada;
+    }
+
+    public Evento precioEntrada(BigDecimal precioEntrada) {
+        this.precioEntrada = precioEntrada;
+        return this;
+    }
+
     public Evento asientos(Set<Asiento> asientos) { this.setAsientos(asientos); return this; }
     public Evento addAsientos(Asiento asiento) { this.asientos.add(asiento); asiento.setEvento(this); return this; }
     public Evento removeAsientos(Asiento asiento) { this.asientos.remove(asiento); asiento.setEvento(null); return this; }
@@ -192,8 +219,6 @@ public class Evento implements Serializable {
     public Evento ventas(Set<Venta> ventas) { this.setVentas(ventas); return this; }
     public Evento addVentas(Venta venta) { this.ventas.add(venta); venta.setEvento(this); return this; }
     public Evento removeVentas(Venta venta) { this.ventas.remove(venta); venta.setEvento(null); return this; }
-
-
     // MÉTODOS ESPECIALES
 
     @Override
@@ -221,7 +246,9 @@ public class Evento implements Serializable {
             ", cantidadAsientosTotales=" + cantidadAsientosTotales +
             ", filaAsientos=" + filaAsientos +
             ", columnaAsientos=" + columnaAsientos +
+            ", precioEntrada=" + precioEntrada +
             ", activo=" + getActivo() +
             "}";
     }
+
 }

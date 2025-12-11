@@ -74,4 +74,13 @@
             <!-- jhipster-needle-liquibase-add-loadcolumn - JHipster (and/or extensions) can add load columns here -->
         </loadData>
     </changeSet>
+
+  <changeSet id="add-precio-entrada-to-evento" author="martin">
+    <addColumn tableName="evento">
+      <column name="precio_entrada" type="numeric(21,2)" defaultValueNumeric="0">
+        <constraints nullable="false"/>
+      </column>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

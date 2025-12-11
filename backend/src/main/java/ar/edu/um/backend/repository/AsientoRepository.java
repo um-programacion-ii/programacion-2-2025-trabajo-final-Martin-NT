@@ -54,7 +54,7 @@ public interface AsientoRepository extends JpaRepository<Asiento, Long> {
     @Query("select asiento from Asiento asiento left join fetch asiento.evento where asiento.id =:id")
     Optional<Asiento> findOneWithToOneRelationships(@Param("id") Long id);
 
-    // Métodos específicos por Evento
+    // Métodos específicos
     /**
      * Devuelve todos los asientos de un evento específico,
      * ordenados por fila y columna en forma ascendente.
@@ -71,4 +71,12 @@ public interface AsientoRepository extends JpaRepository<Asiento, Long> {
      * @return Cantidad de asientos eliminados.
      */
     long deleteByEventoId(Long eventoId);
+
+    /**
+     * Busca un asiento puntual por evento + fila + columna.
+     *
+     * Se usa en VentaSyncService para vincular los asientos del request de venta
+     * con los asientos reales persistidos en la base.
+     */
+    Optional<Asiento> findByEventoIdAndFilaAndColumna(Long eventoId, Integer fila, Integer columna);
 }
