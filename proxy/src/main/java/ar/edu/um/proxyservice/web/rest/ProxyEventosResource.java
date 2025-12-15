@@ -1,16 +1,14 @@
 package ar.edu.um.proxyservice.web.rest;
-
 import ar.edu.um.proxyservice.service.CatServiceClient;
 import ar.edu.um.proxyservice.service.EstadoAsientosRedisService;
+import ar.edu.um.proxyservice.service.dto.AsientoRemotoDTO;
 import ar.edu.um.proxyservice.service.dto.EstadoAsientosRemotoDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.Map;
-
 /**
  * Controlador REST del proxy para exponer endpoints de eventos
  * hacia el backend (o Postman), delegando en CatServiceClient (Feign).
@@ -18,7 +16,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/proxy")
 public class ProxyEventosResource {
-
     private static final Logger log = LoggerFactory.getLogger(ProxyEventosResource.class);
 
     private final CatServiceClient catServiceClient;
@@ -124,6 +121,53 @@ public class ProxyEventosResource {
                     .body("{\"error\":\"No se pudo crear la venta en la cátedra\"}");
         }
     }
+
+    /**
+     * POST /api/proxy/eventos/{id}/bloqueos
+     *
+     * Recibe una solicitud de bloqueo de asiento desde el backend del alumno
+     * y registra el bloqueo en la cátedra llamando a /api/endpoints/v1/bloquear-asientos.
+     *
+     * El {id} es el ID del evento en la cátedra (externalId).
+     */
+    @PostMapping("/eventos/{id}/bloqueos")
+    public ResponseEntity<?> crearBloqueoEvento(
+            @PathVariable Long id,
+            @RequestBody AsientoRemotoDTO asiento
+    ) {
+        log.info(
+                "🔒 [Proxy] POST /api/proxy/eventos/{}/bloqueos fila={}, columna={}",
+                id,
+                asiento.getFila(),
+                asiento.getColumna()
+        );
+
+        if (asiento.getFila() == null || asiento.getColumna() == null) {
+            return ResponseEntity
+                    .badRequest()
+                    .body("{\"error\":\"fila y columna son obligatorias\"}");
+        }
+
+        // Armamos el JSON que espera la cátedra: { "eventoId": X, "fila": Y, "columna": Z }
+        Map<String, Object> body = Map.of(
+                "eventoId", id,
+                "fila", asiento.getFila(),
+                "columna", asiento.getColumna()
+        );
+
+        try {
+            catServiceClient.bloquearAsiento(body);
+            log.info("🔒 [Proxy] Bloqueo confirmado en la cátedra para eventoId={}, fila={}, columna={}",
+                    id, asiento.getFila(), asiento.getColumna());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("💥 [Proxy] Error al bloquear asiento en la cátedra para eventoId={}", id, e);
+            return ResponseEntity
+                    .status(HttpStatus.BAD_GATEWAY)
+                    .body("{\"error\":\"No se pudo bloquear el asiento en la cátedra\"}");
+        }
+    }
+
 
 
 }

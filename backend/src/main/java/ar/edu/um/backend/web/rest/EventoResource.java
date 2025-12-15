@@ -1,7 +1,10 @@
 package ar.edu.um.backend.web.rest;
 import ar.edu.um.backend.repository.EventoRepository;
+import ar.edu.um.backend.service.AsientoBloqueoService;
 import ar.edu.um.backend.service.AsientoEstadoService;
 import ar.edu.um.backend.service.EventoService;
+import ar.edu.um.backend.service.dto.AsientoBloqueoRequestDTO;
+import ar.edu.um.backend.service.dto.AsientoBloqueoResponseDTO;
 import ar.edu.um.backend.service.dto.AsientoEstadoDTO;
 import ar.edu.um.backend.service.dto.EventoDTO;
 import ar.edu.um.backend.web.rest.errors.BadRequestAlertException;
@@ -10,13 +13,16 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
 
@@ -41,11 +47,14 @@ public class EventoResource {
     private final EventoService eventoService;
     private final EventoRepository eventoRepository;
     private final AsientoEstadoService asientoEstadoService;
+    private final AsientoBloqueoService asientoBloqueoService;
 
-    public EventoResource(EventoService eventoService, EventoRepository eventoRepository, AsientoEstadoService asientoEstadoService) {
+
+    public EventoResource(EventoService eventoService, EventoRepository eventoRepository, AsientoEstadoService asientoEstadoService, AsientoBloqueoService asientoBloqueoService) {
         this.eventoService = eventoService;
         this.eventoRepository = eventoRepository;
         this.asientoEstadoService = asientoEstadoService;
+        this.asientoBloqueoService = asientoBloqueoService;
     }
 
     /**
@@ -193,4 +202,38 @@ public class EventoResource {
         return ResponseEntity.ok(mapa);
     }
 
+    /**
+     * POST /api/eventos/{id}/bloqueos
+     *
+     * Crea un bloqueo de asiento para un evento local.
+     *
+     * Body:
+     * {
+     *   "fila": 2,
+     *   "columna": 5
+     * }
+     * Respuesta:
+     * {
+     *   "fila": 2,
+     *   "columna": 5,
+     *   "estado": "BLOQUEADO",
+     *   "expiraA": "2025-12-15T10:30:00"
+     * }
+     */
+    @PostMapping("/{id}/bloqueos")
+    public ResponseEntity<AsientoBloqueoResponseDTO> bloquearAsiento(
+        @PathVariable("id") Long eventoIdLocal,
+        @RequestBody AsientoBloqueoRequestDTO request
+    ) {
+        LOG.info("🔒 [Bloqueo] POST /api/eventos/{}/bloqueos body={}", eventoIdLocal, request);
+
+        try {
+            AsientoBloqueoResponseDTO respuesta = asientoBloqueoService.bloquearAsiento(eventoIdLocal, request);
+            return ResponseEntity.ok(respuesta);
+        } catch (IllegalStateException e) {
+            LOG.warn("⚠️  [Bloqueo] Error de negocio al bloquear asiento para eventoIdLocal={}: {}", eventoIdLocal, e.getMessage());
+            // 400 con el mensaje de negocio
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
 }

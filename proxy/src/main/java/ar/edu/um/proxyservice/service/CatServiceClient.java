@@ -87,4 +87,20 @@ public class CatServiceClient {
         }
     }
 
+    /**
+     * POST /api/endpoints/v1/bloquear-asientos
+     */
+    public void bloquearAsiento(Map<String, Object> bloqueoJson) {
+        String operacion = "bloquearAsiento";
+        try {
+            log.info("🎓 [Cátedra] Llamando a {} vía Feign con payload={}", operacion, bloqueoJson);
+            feignClient.bloquearAsiento(bloqueoJson);
+            log.info("🎓 [Cátedra] Bloqueo registrado (200 OK) en la cátedra");
+        } catch (Exception e) {
+            log.error("🎓 [Cátedra] Error llamando a {} vía Feign", operacion, e);
+            throw e;
+        }
+    }
+
+
 }

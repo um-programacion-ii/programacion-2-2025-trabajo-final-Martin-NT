@@ -161,7 +161,7 @@ public class AsientoEstadoService {
                         )
                     );
                 } else {
-                    // Bloqueo expirado → tratamos el asiento como LIBRE
+                    // Bloqueo expirado → lo marcamos como BLOQUEADO_EXPIRADO
                     log.info(
                         "🕒 [Redis] Asiento ({},{}) bloqueo expirado",
                         asientoDB.getFila(),
@@ -172,8 +172,8 @@ public class AsientoEstadoService {
                         new AsientoEstadoDTO(
                             asientoDB.getFila(),
                             asientoDB.getColumna(),
-                            "LIBRE",
-                            null
+                            "BLOQUEADO_EXPIRADO",
+                            expira
                         )
                     );
                 }
@@ -212,4 +212,27 @@ public class AsientoEstadoService {
             return null;
         }
     }
+
+    /**
+     * Obtiene el estado de UN asiento puntual (fila/columna) para un evento,
+     * usando el mapa final de obtenerEstadoActualDeAsientos().
+     *
+     * @param eventoId ID local del evento
+     * @param fila fila del asiento
+     * @param columna columna del asiento
+     * @return AsientoEstadoDTO o null si no existe ese asiento
+     */
+    public AsientoEstadoDTO obtenerEstadoAsiento(Long eventoId, int fila, int columna) {
+        List<AsientoEstadoDTO> todos = obtenerEstadoActualDeAsientos(eventoId);
+
+        return todos
+            .stream()
+            .filter(a ->
+                a.getFila() != null && a.getColumna() != null &&
+                    a.getFila() == fila && a.getColumna() == columna
+            )
+            .findFirst()
+            .orElse(null);
+    }
+
 }

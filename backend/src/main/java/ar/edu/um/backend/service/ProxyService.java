@@ -1,4 +1,5 @@
 package ar.edu.um.backend.service;
+import ar.edu.um.backend.service.dto.ProxyAsientoDTO;
 import ar.edu.um.backend.service.dto.ProxyVentaDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,14 +12,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
  *
  * Flujo general:
  *   Backend → ProxyService (WebClient) → Proxy-Service → Servidor de la cátedra
- *
- * Este servicio encapsula todas las operaciones HTTP contra:
- *   - /api/proxy/eventos-resumidos
- *   - /api/proxy/eventos
- *   - /api/proxy/eventos/{id}
- *   - /api/proxy/forzar-actualizacion
- *   - /api/proxy/eventos/{id}/asientos
- *   - /api/proxy/eventos/{id}/estado-asientos
  *
  * Todas las llamadas usan el WebClient ya preconfigurado en ProxyWebClientConfig,
  * incluyendo el token JWT configurado en PROXY_TOKEN.
@@ -225,6 +218,41 @@ public class ProxyService {
 
         log.info(
             "💸 [Proxy-Backend] Respuesta de venta desde proxy para externalId={} -> {}",
+            externalId,
+            respuesta
+        );
+
+        return respuesta;
+    }
+
+    /**
+     * POST /api/proxy/eventos/{externalId}/bloqueos
+     *
+     * Envía un bloqueo de asiento al proxy, que a su vez lo manda a la cátedra.
+     * Usa ProxyAsientoDTO como body (solo fila y columna).
+     *
+     * @param externalId ID del evento en la cátedra.
+     * @param fila fila del asiento a bloquear (>=1)
+     * @param columna columna del asiento a bloquear (>=1)
+     * @return JSON crudo devuelto por el proxy/cátedra, o null si hubo error.
+     */
+    public String crearBloqueoEnProxy(Long externalId, Integer fila, Integer columna) {
+        ProxyAsientoDTO body = new ProxyAsientoDTO();
+        body.setFila(fila);
+        body.setColumna(columna);
+
+        log.info(
+            "🔒 [Proxy-Backend] Enviando bloqueo al proxy: externalId={}, fila={}, columna={}",
+            externalId,
+            fila,
+            columna
+        );
+
+        String path = "/eventos/" + externalId + "/bloqueos";
+        String respuesta = doPost(path, body);
+
+        log.info(
+            "🔒 [Proxy-Backend] Respuesta bloqueo desde proxy para externalId={} -> {}",
             externalId,
             respuesta
         );
