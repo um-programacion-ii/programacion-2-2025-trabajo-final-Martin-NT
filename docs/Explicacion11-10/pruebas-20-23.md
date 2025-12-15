@@ -626,3 +626,18 @@ EstadoAsientosRedisService: Se parseó correctamente estado de asientos para eve
 ```
 
 ---
+
+
+pruebas de bloqueo 
+
+En estado-asientos-tiempo-real
+http://localhost:8080/api/eventos/1052/asientos
+
+ver asientos libres 
+
+en P6 Bloquear asientos 
+
+En estado-asientos-tiempo-real
+http://localhost:8080/api/eventos/1052/asientos
+
+revisar que este bloqueado

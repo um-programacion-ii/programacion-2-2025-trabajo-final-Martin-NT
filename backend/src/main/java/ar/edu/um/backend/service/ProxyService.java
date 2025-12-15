@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-
 /**
  * Servicio encargado de realizar llamadas HTTP desde el backend del alumno
  * hacia el proxy-service local, el cual a su vez se comunica con la cátedra.
@@ -119,6 +118,7 @@ public class ProxyService {
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(String.class)
+                .defaultIfEmpty("")   // si el body está vacío, devuelve "" en vez de null
                 .block();
 
             log.info(
@@ -141,6 +141,7 @@ public class ProxyService {
             return null;
         }
     }
+
 
 
     /**
@@ -185,7 +186,6 @@ public class ProxyService {
 
     /**
      * Llama a GET /api/proxy/eventos/{id}/asientos en el proxy-service.
-     *
      * Devuelve el JSON crudo de asientos del evento (wrapper con eventoId + lista de asientos).
      *
      * @param externalId ID del evento en la cátedra.

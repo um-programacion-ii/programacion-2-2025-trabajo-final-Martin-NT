@@ -13,7 +13,7 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 /**
- * A Venta.
+ * Entidad JPA que representa una venta registrada en la base de datos local.
  */
 @Entity
 @Table(name = "venta")
@@ -29,6 +29,9 @@ public class Venta implements Serializable {
     @Column(name = "id")
     private Long id;
 
+    /**
+     * Identificador de la venta en el sistema remoto (cátedra),
+     */
     @Column(name = "external_id")
     private Long externalId;
 

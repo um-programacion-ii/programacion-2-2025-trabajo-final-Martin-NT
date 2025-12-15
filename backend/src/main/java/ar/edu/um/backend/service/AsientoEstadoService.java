@@ -12,7 +12,10 @@ import java.time.Instant;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 /**
  * Servicio encargado de construir el estado actual de los asientos de un evento,
  * combinando:
@@ -59,9 +62,13 @@ public class AsientoEstadoService {
      */
     public List<AsientoEstadoDTO> obtenerEstadoActualDeAsientos(Long eventoId) {
         // 1) Obtener el evento para conocer filas/columnas y el externalId
-        Evento evento = eventoRepository
-            .findById(eventoId)
-            .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+        Evento evento = eventoRepository.findById(eventoId)
+            .orElseThrow(() ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Evento no encontrado"
+                )
+            );
 
         // 2) Asientos desde la DB local (mapa base)
         List<Asiento> asientosDB =

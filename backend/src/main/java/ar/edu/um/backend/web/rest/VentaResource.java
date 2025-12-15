@@ -21,9 +21,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
-
 /**
- * REST controller for managing {@link ar.edu.um.backend.domain.Venta}.
+ * Controlador REST encargado de gestionar las operaciones relacionadas
+ * con la entidad {@link ar.edu.um.backend.domain.Venta}.
+ *
+ * Expone:
+ * - Endpoints CRUD tradicionales para administrar ventas locales.
+ * - Un endpoint especial para iniciar una venta real de asientos,
+ *   validando bloqueos en Redis y confirmando la operación con la cátedra
+ *   a través del proxy.
  */
 @RestController
 @RequestMapping("/api/ventas")
@@ -158,17 +164,13 @@ public class VentaResource {
      * POST /api/ventas/eventos/{eventoId}/venta :
      * Crea una venta real para un evento, validando bloqueos en Redis
      * y confirmando la operación con la cátedra.
-     *
-     * Nota: al estar este controller mapeado en "/api/ventas",
-     * la URL completa es:
-     *   POST /api/ventas/eventos/{eventoId}/venta
      */
     @PostMapping("/eventos/{eventoId}/venta")
     public ResponseEntity<VentaDTO> crearVentaParaEvento(
         @PathVariable Long eventoId,
         @Valid @RequestBody VentaRequestDTO request
     ) {
-        LOG.info("[VentaResource] REST request to crear venta REAL para eventoIdLocal={}", eventoId);
+        LOG.info("[Venta] Solicitud de venta recibida para eventoIdLocal={}", eventoId);
 
         // nos aseguramos de usar el id local del path
         request.setEventoIdLocal(eventoId);

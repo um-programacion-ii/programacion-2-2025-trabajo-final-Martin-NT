@@ -2,11 +2,21 @@ package ar.edu.um.backend.service.dto;
 import java.io.Serializable;
 import java.util.List;
 /**
- * DTO que representa la petición de venta que llega desde el frontend.
- * El backend usará esta info para:
- *  - validar bloqueos en Redis,
- *  - calcular cantidad de asientos,
- *  - construir la venta real a enviar al proxy/cátedra.
+ * DTO utilizado para iniciar una venta desde el frontend.
+ *
+ * Representa la intención de compra de un usuario y
+ * NO se persiste en la base de datos.
+ *
+ * Contiene únicamente la información mínima necesaria
+ * para comenzar el proceso de venta:
+ *  - el ID LOCAL del evento (id de la tabla Evento),
+ *  - la lista de asientos seleccionados (fila y columna).
+ *
+ * El backend utiliza este DTO para:
+ *  - validar que los asientos existan para el evento,
+ *  - validar que estén bloqueados de forma vigente (Redis),
+ *  - validar que no estén vendidos,
+ *  - construir la venta real que se envía al proxy/cátedra.
  */
 public class VentaRequestDTO implements Serializable {
     private Long eventoIdLocal; // id de tu tabla evento (ej: 1001)

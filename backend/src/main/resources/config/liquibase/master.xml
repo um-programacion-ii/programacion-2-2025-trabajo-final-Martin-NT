@@ -22,5 +22,7 @@
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
     <include file="config/liquibase/changelog/20251209_added_external_id_to_evento.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20250001_add_evento_activo.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20251210_add_external_id_to_venta.xml" relativeToChangelogFile="false"/>
+
 
 </databaseChangeLog>

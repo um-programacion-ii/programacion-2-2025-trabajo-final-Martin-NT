@@ -29,6 +29,12 @@ public interface VentaRepository extends VentaRepositoryWithBagRelationships, Jp
         return this.fetchBagRelationships(this.findAllWithToOneRelationships(pageable));
     }
 
+    /**
+     * Busca una venta local usando el ID de venta real de la cátedra.
+     * Se usa al procesar notificaciones (Kafka → proxy → backend).
+     */
+    Optional<Venta> findByExternalId(Long externalId);
+
     @Query(value = "select venta from Venta venta left join fetch venta.evento", countQuery = "select count(venta) from Venta venta")
     Page<Venta> findAllWithToOneRelationships(Pageable pageable);
 

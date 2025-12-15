@@ -1,15 +1,18 @@
 package ar.edu.um.backend.service;
+
 import ar.edu.um.backend.domain.Evento;
 import ar.edu.um.backend.repository.EventoRepository;
 import ar.edu.um.backend.service.dto.ProxyEventoDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
 /**
  * Servicio encargado de sincronizar la base de datos local de eventos
  * con la información real proveniente de la cátedra, accesible a través del proxy.
@@ -33,7 +36,9 @@ import org.springframework.stereotype.Service;
 @Service
 @Transactional  // Garantiza atomicidad: si falla algo → rollback de cambios
 public class EventoSyncService {
+
     private static final Logger log = LoggerFactory.getLogger(EventoSyncService.class);
+
     private final ProxyService proxyService;          // Cliente que consulta al proxy
     private final EventoRepository eventoRepository; // Acceso a la base local
     private final ObjectMapper objectMapper;          // Convierte JSON → objetos Java
@@ -58,7 +63,7 @@ public class EventoSyncService {
      *  - Llama a {@link ProxyService#listarEventosCompletos()} para obtener el JSON.
      *  - Parsea a un arreglo de {@link ProxyEventoDTO}.
      *  - Crea/actualiza eventos locales según su externalId.
-     *  - Valida datos críticos (fecha, hora, filas/columnas de asientos).
+     *  - Valida datos críticos (fecha, hora, filas/columnas de asientos, precioEntrada).
      *  - Llama a {@link AsientoSyncService} para sincronizar asientos evento por evento.
      *  - Marca como inactivos los eventos que ya no vienen en el listado remoto.
      */
@@ -154,6 +159,24 @@ public class EventoSyncService {
                 local.setColumnaAsientos(columnas);
                 local.setCantidadAsientosTotales(filas * columnas);
 
+                // PRECIO DE ENTRADA
+                BigDecimal precioEntrada = remoto.getPrecioEntrada();
+                if (precioEntrada == null) {
+                    log.warn(
+                        "⚠️  [Sync-Eventos] El evento {} no tiene precioEntrada en el proxy. Se asigna 0.",
+                        remoto.getId()
+                    );
+                    precioEntrada = BigDecimal.ZERO;
+                } else if (precioEntrada.compareTo(BigDecimal.ZERO) < 0) {
+                    log.error(
+                        "❌ [Sync-Eventos] Evento {} tiene precioEntrada negativo ({}). Evento NO sincronizado.",
+                        remoto.getId(),
+                        precioEntrada
+                    );
+                    continue; // No guardamos un evento con precio inválido
+                }
+                local.setPrecioEntrada(precioEntrada);
+
                 // DATOS GENERALES
                 local.setTitulo(remoto.getTitulo());
                 local.setDescripcion(remoto.getDescripcion());
@@ -164,10 +187,11 @@ public class EventoSyncService {
                 Evento eventoGuardado = eventoRepository.save(local);
 
                 log.info(
-                    "💾 [DB] Evento guardado → idLocal={}, externalId={}, titulo={}",
+                    "💾 [DB] Evento guardado → idLocal={}, externalId={}, titulo={}, precioEntrada={}",
                     eventoGuardado.getId(),
                     remoto.getId(),
-                    eventoGuardado.getTitulo()
+                    eventoGuardado.getTitulo(),
+                    eventoGuardado.getPrecioEntrada()
                 );
 
                 // 5. Sincronizar asientos de este evento concreto

@@ -801,3 +801,24 @@ FROM asiento a
 JOIN evento e ON a.evento_id = e.id
 WHERE a.evento_id = 1001
   AND (a.fila > e.fila_asientos OR a.columna > e.columna_asientos);
+
+
+
+# Usar siempre
+
+docker compose up -d
+docker ps
+docker logs -f kafka
+
+
+ver algo:
+postgres
+redis
+kafka
+zookeeper
+
+cd backend
+./mvnw
+
+cd proxy
+./boot.sh

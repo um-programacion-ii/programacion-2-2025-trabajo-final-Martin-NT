@@ -1,11 +1,20 @@
 package ar.edu.um.backend.service.dto;
 import java.io.Serializable;
 /**
- * DTO simple para representar un asiento (fila/columna) involucrado en una venta.
- * Se usa tanto en VentaRequestDTO como en ProxyVentaDTO.
+ * DTO simple que representa un asiento únicamente
+ * por su posición dentro del evento (fila y columna).
+ *
+ * No representa un asiento persistido ni su estado
+ * (LIBRE, VENDIDO, BLOQUEADO, etc.).
+ *
+ * Se utiliza cuando solo importa identificar
+ * qué asiento se selecciona para una venta.
+ *
+ * Este DTO se usa:
+ *  - en VentaRequestDTO (datos enviados por el frontend),
+ *  - en ProxyVentaDTO (datos enviados al proxy/cátedra).
  */
 public class AsientoVentaDTO implements Serializable {
-
     private Integer fila;
     private Integer columna;
 

@@ -23,8 +23,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service Implementation for managing {@link ar.edu.um.backend.domain.Venta}.
+ * Implementación del servicio estándar para gestionar {@link ar.edu.um.backend.domain.Venta}.
+ *
+ * Este servicio se usa principalmente para operaciones CRUD "clásicas" sobre ventas
+ * (por ejemplo, desde endpoints administrativos).
+ *
+ * El flujo de venta real (validación de bloqueos en Redis + comunicación con la cátedra)
+ * se implementa en {@link ar.edu.um.backend.service.VentaSyncService}.
  */
+
 @Service
 @Transactional
 public class VentaServiceImpl implements VentaService {
@@ -124,7 +131,11 @@ public class VentaServiceImpl implements VentaService {
      *
      * - precioVenta > 0
      * - cantidadAsientos > 0
-     * - cantidadAsientos coincide con la cantidad de asientos asociados
+     *
+     * - cantidadAsientos coincide con la cantidad de asientos asociados.
+     *   Significa que el número que dice la venta (cantidadAsientos) tiene que coincidir
+     *   con la cantidad real de asientosque están dentro de la venta.)
+     *
      * - todos los asientos pertenecen al mismo evento de la venta
      * - ningún asiento está ya en estado VENDIDO
      */

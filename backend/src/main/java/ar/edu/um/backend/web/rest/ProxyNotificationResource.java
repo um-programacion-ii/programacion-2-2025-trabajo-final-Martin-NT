@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 /**
  * Endpoints que serán llamados por el proxy-service para notificar cambios:
  *  - en EVENTOS (cuando Kafka informa que hubo actualizaciones de eventos/asientos),
- *  - en VENTAS (cuando Kafka informa que una venta fue confirmada o falló).
+ *  - en VENTAS (cuando Kafka informa que una venta fue confirmada o rechazada).
  */
 @RestController
 @RequestMapping("/api/proxy")
@@ -33,9 +33,10 @@ public class ProxyNotificationResource {
      * POST /api/proxy/notificacion-evento
      *
      * Pensado para ser llamado EXCLUSIVAMENTE por el proxy-service.
-     * Por ahora:
+     *
+     * Comportamiento actual:
      *  - Loguea el contenido recibido (si viene algo en el body).
-     *  - Dispara nuevamente la sincronización de eventos contra el proxy.
+     *  - Dispara nuevamente la sincronización de eventos/asientos contra el proxy.
      */
     @PostMapping("/notificacion-evento")
     public ResponseEntity<String> recibirNotificacionEvento(@RequestBody(required = false) String body) {
@@ -61,12 +62,11 @@ public class ProxyNotificationResource {
      * Endpoint para notificaciones de VENTAS enviadas por el proxy-service
      * (normalmente originadas en Kafka en el servidor de la cátedra).
      *
-     * Flujo esperado:
-     *   Kafka (cátedra) → Proxy-service → Backend-alumno (este endpoint)
-     *
-     * Por ahora:
+     * Comportamiento actual:
      *  - Loguea el body si viene.
-     *  - Delega en VentaSyncService para que procese/actualice la venta local.
+     *  - Delegar el procesamiento en VentaSyncService.procesarNotificacionVenta(body),
+     *    donde se parsea el JSON al formato ProxyVentaDTO y se actualiza la
+     *    venta local (estado, descripción, etc.) usando ventaId como externalId.
      */
     @PostMapping("/notificacion-venta")
     public ResponseEntity<String> recibirNotificacionVenta(@RequestBody(required = false) String body) {
@@ -74,10 +74,10 @@ public class ProxyNotificationResource {
 
         if (body != null && !body.isBlank()) {
             log.info("[Proxy-Backend] Body de la notificación de venta: {}", body);
+            // Delegamos el procesamiento al servicio de sincronización de ventas
             ventaSyncService.procesarNotificacionVenta(body);
         } else {
             log.warn("[Proxy-Backend] Notificación de venta sin body. No hay datos para procesar.");
-            // Podés decidir si llamarlo igual o no. Por ahora, no se procesa nada.
         }
 
         return ResponseEntity.ok(
