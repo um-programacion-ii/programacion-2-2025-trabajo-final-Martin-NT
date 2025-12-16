@@ -1,0 +1,34 @@
+{
+  "backendCatedraApp": {
+    "evento": {
+      "home": {
+        "title": "Eventos",
+        "refreshListLabel": "Refrescar lista",
+        "createLabel": "Crear nuevo Evento",
+        "createOrEditLabel": "Crear o editar Evento",
+        "notFound": "Ningún Eventos encontrado"
+      },
+      "created": "Un nuevo Evento ha sido creado con el identificador {{ param }}",
+      "updated": "Un Evento ha sido actualizado con el identificador {{ param }}",
+      "deleted": "Un Evento ha sido eliminado con el identificador {{ param }}",
+      "delete": {
+        "question": "¿Seguro que quiere eliminar Evento {{ id }}?"
+      },
+      "detail": {
+        "title": "Evento"
+      },
+      "id": "ID",
+      "titulo": "Titulo",
+      "descripcion": "Descripcion",
+      "fecha": "Fecha",
+      "hora": "Hora",
+      "organizador": "Organizador",
+      "presentadores": "Presentadores",
+      "cantidadAsientosTotales": "Cantidad Asientos Totales",
+      "filaAsientos": "Fila Asientos",
+      "columnaAsientos": "Columna Asientos",
+      "asientos": "Asientos",
+      "ventas": "Ventas"
+    }
+  }
+}

@@ -1,0 +1,144 @@
+<div class="d-flex justify-content-center">
+  <div class="col-8">
+    <form name="editForm" novalidate (ngSubmit)="save()" [formGroup]="editForm">
+      <h2 id="jhi-asiento-heading" data-cy="AsientoCreateUpdateHeading" jhiTranslate="backendCatedraApp.asiento.home.createOrEditLabel">
+        Crear o editar Asiento
+      </h2>
+
+      <div>
+        <jhi-alert-error />
+
+        @if (editForm.controls.id.value !== null) {
+          <div class="mb-3">
+            <label class="form-label" for="field_id" jhiTranslate="backendCatedraApp.asiento.id">ID</label>
+            <input type="number" class="form-control" name="id" id="field_id" data-cy="id" formControlName="id" [readonly]="true" />
+          </div>
+        }
+
+        @let filaRef = editForm.get('fila')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_fila" jhiTranslate="backendCatedraApp.asiento.fila">Fila</label>
+          <input type="number" class="form-control" name="fila" id="field_fila" data-cy="fila" formControlName="fila" />
+          @if (filaRef.invalid && (filaRef.dirty || filaRef.touched)) {
+            <div>
+              @if (editForm.get('fila')?.errors?.required) {
+                <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+              }
+              <small class="form-text text-danger" [hidden]="!editForm.get('fila')?.errors?.number" jhiTranslate="entity.validation.number"
+                >Este campo debe ser un número.</small
+              >
+            </div>
+          }
+        </div>
+
+        @let columnaRef = editForm.get('columna')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_columna" jhiTranslate="backendCatedraApp.asiento.columna">Columna</label>
+          <input type="number" class="form-control" name="columna" id="field_columna" data-cy="columna" formControlName="columna" />
+          @if (columnaRef.invalid && (columnaRef.dirty || columnaRef.touched)) {
+            <div>
+              @if (editForm.get('columna')?.errors?.required) {
+                <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+              }
+              <small
+                class="form-text text-danger"
+                [hidden]="!editForm.get('columna')?.errors?.number"
+                jhiTranslate="entity.validation.number"
+                >Este campo debe ser un número.</small
+              >
+            </div>
+          }
+        </div>
+
+        @let estadoRef = editForm.get('estado')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_estado" jhiTranslate="backendCatedraApp.asiento.estado">Estado</label>
+          <select class="form-control" name="estado" formControlName="estado" id="field_estado" data-cy="estado">
+            <option [ngValue]="null">{{ 'backendCatedraApp.AsientoEstado.null' | translate }}</option>
+            @for (asientoEstado of asientoEstadoValues; track $index) {
+              <option [value]="asientoEstado">{{ 'backendCatedraApp.AsientoEstado.' + asientoEstado | translate }}</option>
+            }
+          </select>
+          @if (estadoRef.invalid && (estadoRef.dirty || estadoRef.touched)) {
+            <div>
+              @if (editForm.get('estado')?.errors?.required) {
+                <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="field_personaActual" jhiTranslate="backendCatedraApp.asiento.personaActual">Persona Actual</label>
+          <input
+            type="text"
+            class="form-control"
+            name="personaActual"
+            id="field_personaActual"
+            data-cy="personaActual"
+            formControlName="personaActual"
+          />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="field_evento" jhiTranslate="backendCatedraApp.asiento.evento">Evento</label>
+          <select
+            class="form-control"
+            id="field_evento"
+            data-cy="evento"
+            name="evento"
+            formControlName="evento"
+            [compareWith]="compareEvento"
+          >
+            @if (editForm.get(['evento'])!.value === null) {
+              <option [ngValue]="null" selected></option>
+            }
+            @for (eventoOption of eventosSharedCollection; track $index) {
+              <option [ngValue]="eventoOption">{{ eventoOption.titulo }}</option>
+            }
+          </select>
+        </div>
+        @if (editForm.get(['evento'])!.invalid && (editForm.get(['evento'])!.dirty || editForm.get(['evento'])!.touched)) {
+          <div>
+            @if (editForm.get(['evento'])?.errors?.required) {
+              <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+            }
+          </div>
+        }
+
+        <div class="mb-3">
+          <label for="field_ventas" jhiTranslate="backendCatedraApp.asiento.ventas">Ventas</label>
+          <select
+            class="form-control"
+            id="field_ventas"
+            data-cy="ventas"
+            multiple
+            name="ventas"
+            formControlName="ventas"
+            [compareWith]="compareVenta"
+          >
+            @for (ventaOption of ventasSharedCollection; track $index) {
+              <option [ngValue]="ventaOption">{{ ventaOption.id }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <button type="button" id="cancel-save" data-cy="entityCreateCancelButton" class="btn btn-secondary" (click)="previousState()">
+          <fa-icon icon="ban"></fa-icon>&nbsp;<span jhiTranslate="entity.action.cancel">Cancelar</span>
+        </button>
+
+        <button
+          type="submit"
+          id="save-entity"
+          data-cy="entityCreateSaveButton"
+          [disabled]="editForm.invalid || isSaving"
+          class="btn btn-primary"
+        >
+          <fa-icon icon="save"></fa-icon>&nbsp;<span jhiTranslate="entity.action.save">Guardar</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

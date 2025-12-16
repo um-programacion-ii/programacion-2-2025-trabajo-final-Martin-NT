@@ -1,0 +1,10 @@
+{
+  "backendCatedraApp": {
+    "AsientoEstado": {
+      "null": "",
+      "LIBRE": "LIBRE",
+      "BLOQUEADO": "BLOQUEADO",
+      "OCUPADO": "OCUPADO"
+    }
+  }
+}

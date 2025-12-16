@@ -1,0 +1,11 @@
+id;fecha_venta;estado;descripcion;precio_venta;cantidad_asientos;evento_id
+1;2025-11-14;PENDIENTE;lumpy;2660.44;16563;1
+2;2025-11-14;PENDIENTE;scorpion finding where;15945.13;28666;2
+3;2025-11-14;PENDIENTE;the;17405.86;10009;3
+4;2025-11-14;EXITOSA;spirit qualified;3194.89;11972;4
+5;2025-11-14;PENDIENTE;warlike for impractical;4494.22;15488;5
+6;2025-11-14;EXITOSA;gee gadzooks gnash;21904.99;21076;6
+7;2025-11-14;EXITOSA;lightly whenever hm;21681.05;15775;7
+8;2025-11-14;FALLIDA;oxygenate ignorance;522.89;19129;8
+9;2025-11-14;EXITOSA;blah;32213.5;1695;9
+10;2025-11-14;PENDIENTE;deck beneath only;162.26;12775;10
