@@ -628,7 +628,7 @@ chmod +x boot.sh
 - 200 OK
 
 
-Kafka
+### Kafka
 
 sudo nano /etc/hosts
 agregar: 192.168.194.250    kafka
@@ -643,3 +643,46 @@ deberia ver: PING kafka (192.168.194.250) ...
 
 
 http://192.168.194.250:8080/
+
+### Cómo probar
+
+1. **Levantar servicios**
+   - Levantar backend JHipster (`./mvnw`).
+   - Levantar proxy-service (`./mvnw` en el módulo proxy).
+   - Asegurarse de tener conectividad via ZeroTier al servidor de la cátedra (`192.168.194.250`).
+
+2. **Probar proxy → cátedra**
+   - Request en Postman:
+     ```http
+     GET http://localhost:8081/api/proxy/eventos-resumidos
+     Authorization: Bearer changeme
+     ```
+   - Resultado esperado:
+     - HTTP `200 OK`.
+     - Body: array JSON de eventos (`Conferencia Nerd`, etc.).
+   - Logs esperados en proxy:
+     - `🌐 [Proxy] GET /api/proxy/eventos`
+     - `🎓 [Cátedra] Llamando a listarEventosCompletos vía Feign`
+     - `🎓 [Cátedra] Respuesta listarEventosCompletos -> bodyLength=...`
+
+3. **Probar backend → proxy → cátedra (sincronización manual)**
+   - Autenticarse como admin:
+     ```http
+     POST http://localhost:8080/api/authenticate
+     ```
+   - Tomar el `id_token`.
+   - Ejecutar:
+     ```http
+     POST http://localhost:8080/api/admin/sync-eventos
+     Authorization: Bearer <id_token>
+     ```
+   - Resultado esperado:
+     - HTTP `204 No Content`.
+   - Logs esperados en backend:
+     - `[Admin-Sync] Solicitud manual de sincronización de eventos.`
+     - `[Proxy-Backend] GET /eventos`
+     - `[Proxy-Backend] Respuesta /eventos -> bodyLength=...`
+     - `[Sync] Recibidos N eventos desde proxy`
+     - `[Sync] Creando evento nuevo externalId=1`
+     - `[Sync] Sincronización finalizada correctamente.`
+     - `[Admin-Sync] Sincronización manual finalizada.`

@@ -16,15 +16,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 )
 public interface CatServiceFeignClient {
 
-    @GetMapping("/endpoints/v1/eventos-resumidos")
+    @GetMapping("/api/endpoints/v1/eventos-resumidos")
     String listarEventosResumidos();
 
-    @GetMapping("/endpoints/v1/eventos")
+    @GetMapping("/api/endpoints/v1/eventos")
     String listarEventosCompletos();
 
-    @GetMapping("/endpoints/v1/evento/{id}")
+    @GetMapping("/api/endpoints/v1/evento/{id}")
     String obtenerEventoPorId(@PathVariable("id") Long id);
 
-    @GetMapping("/endpoints/v1/forzar-actualizacion")
+    @GetMapping("/api/endpoints/v1/forzar-actualizacion")
     String forzarActualizacion();
 }
