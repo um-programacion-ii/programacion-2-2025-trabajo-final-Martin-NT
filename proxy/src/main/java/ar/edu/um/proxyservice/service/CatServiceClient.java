@@ -26,15 +26,15 @@ public class CatServiceClient {
     public String listarEventosResumidos() {
         String operacion = "listarEventosResumidos";
         try {
-            log.info("[CatServiceClient] Llamando a {} vía Feign", operacion);
+            log.info("🎓 [Cátedra] Llamando a {} vía Feign", operacion);
             String body = feignClient.listarEventosResumidos();
-            log.info("[CatServiceClient] Respuesta {} -> bodyLength={}",
+            log.info("🎓 [Cátedra] Respuesta {} -> bodyLength={}",
                     operacion,
                     body != null ? body.length() : null
             );
             return body;
         } catch (Exception e) {
-            log.error("[CatServiceClient] Error llamando a {} vía Feign", operacion, e);
+            log.error("🎓 [Cátedra] Error llamando a {} vía Feign", operacion, e);
             return null;
         }
     }
@@ -45,15 +45,15 @@ public class CatServiceClient {
     public String listarEventosCompletos() {
         String operacion = "listarEventosCompletos";
         try {
-            log.info("[CatServiceClient] Llamando a {} vía Feign", operacion);
+            log.info("🎓 [Cátedra] Llamando a {} vía Feign", operacion);
             String body = feignClient.listarEventosCompletos();
-            log.info("[CatServiceClient] Respuesta {} -> bodyLength={}",
+            log.info("🎓 [Cátedra] Respuesta {} -> bodyLength={}",
                     operacion,
                     body != null ? body.length() : null
             );
             return body;
         } catch (Exception e) {
-            log.error("[CatServiceClient] Error llamando a {} vía Feign", operacion, e);
+            log.error("🎓 [Cátedra] Error llamando a {} vía Feign", operacion, e);
             return null;
         }
     }
@@ -64,16 +64,16 @@ public class CatServiceClient {
     public String obtenerEventoPorId(Long id) {
         String operacion = "obtenerEventoPorId";
         try {
-            log.info("[CatServiceClient] Llamando a {} ({}) vía Feign", operacion, id);
+            log.info("🎓 [Cátedra] Llamando a {} ({}) vía Feign", operacion, id);
             String body = feignClient.obtenerEventoPorId(id);
-            log.info("[CatServiceClient] Respuesta {}({}) -> bodyLength={}",
+            log.info("🎓 [Cátedra] Respuesta {}({}) -> bodyLength={}",
                     operacion,
                     id,
                     body != null ? body.length() : null
             );
             return body;
         } catch (Exception e) {
-            log.error("[CatServiceClient] Error llamando a {} ({}) vía Feign", operacion, id, e);
+            log.error("🎓 [Cátedra] Error llamando a {} ({}) vía Feign", operacion, id, e);
             return null;
         }
     }
@@ -84,15 +84,15 @@ public class CatServiceClient {
     public String forzarActualizacion() {
         String operacion = "forzarActualizacion";
         try {
-            log.info("[CatServiceClient] Llamando a {} vía Feign", operacion);
+            log.info("🎓 [Cátedra] Llamando a {} vía Feign", operacion);
             String body = feignClient.forzarActualizacion();
-            log.info("[CatServiceClient] Respuesta {} -> bodyLength={}",
+            log.info("🎓 [Cátedra] Respuesta {} -> bodyLength={}",
                     operacion,
                     body != null ? body.length() : null
             );
             return body;
         } catch (Exception e) {
-            log.error("[CatServiceClient] Error llamando a {} vía Feign", operacion, e);
+            log.error("🎓 [Cátedra] Error llamando a {} vía Feign", operacion, e);
             return null;
         }
     }

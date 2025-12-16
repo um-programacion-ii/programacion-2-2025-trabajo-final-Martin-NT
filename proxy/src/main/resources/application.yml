@@ -25,3 +25,26 @@ catservice:
 
 catedra:
   jwt-token: ${CATEDRA_JWT_TOKEN:}
+
+logging:
+  level:
+    # Nivel de logs global de la aplicación.
+    root: INFO # INFO muestra solo información importante (no incluye DEBUG).
+
+    # Evita que Spring Security llene la consola con logs técnicos.
+    org.springframework.security: INFO # Muestra solo advertencias y eventos importantes.
+
+    # Filtro ProxyTokenAuthFilter en DEBUG para ver:
+    # - si llega el Bearer
+    # - si falta el token
+    # - qué ruta está siendo filtrada
+    ar.edu.um.proxyservice.config.ProxyTokenAuthFilter: DEBUG #INFO
+
+    # Logs del KafkaListener (eventos recibidos).
+    # INFO muestra solo los mensajes reales de Kafka, sin debug interno.
+    ar.edu.um.proxyservice.messaging: INFO
+
+    # Kafka produce MUCHÍSIMOS logs si está en INFO.
+    # Lo dejamos en WARN para mostrar solo advertencias/errores reales.
+    org.apache.kafka: WARN
+

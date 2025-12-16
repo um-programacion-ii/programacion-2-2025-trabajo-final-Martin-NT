@@ -1,5 +1,4 @@
-package ar.edu.um.proxyservice.config;
-
+package ar.edu.um.proxyservice.devtests;
 import ar.edu.um.proxyservice.service.EstadoAsientosRedisService;
 import ar.edu.um.proxyservice.service.dto.EstadoAsientosRemotoDTO;
 import org.slf4j.Logger;
@@ -15,11 +14,9 @@ import org.springframework.stereotype.Component;
  *  - El JSON crudo se lee correctamente.
  *  - El JSON se parsea sin romper la aplicación.
  *
- * Este runner SOLO se ejecuta en perfil "dev".
- * Cuando termine este issue, podés desactivarlo simplemente cambiando el perfil.
  */
-@Component
-@Profile("dev")
+//@Component
+//@Profile("dev")
 public class RedisTestRunner implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(RedisTestRunner.class);
@@ -32,20 +29,20 @@ public class RedisTestRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        Long eventoId = 1L; // Podés probar otros ID para ver diferentes resultados
+        Long eventoId = 1L; //  Probar otros ID para ver diferentes resultados
 
-        log.info("=== PROBANDO LECTURA DE REDIS PARA eventoId={} ===", eventoId);
+        log.info("=== [RedisTestRunner] PROBANDO LECTURA DE REDIS PARA eventoId={} ===", eventoId);
 
         // 1. JSON crudo desde Redis
         String jsonCrudo = estadoAsientosRedisService.obtenerEstadoAsientosRaw(eventoId);
-        log.info("JSON crudo desde Redis = {}", jsonCrudo);
+        log.info("[DevTest] JSON crudo desde Redis = {}", jsonCrudo);
 
         // 2. DTO parseado
         EstadoAsientosRemotoDTO dto = estadoAsientosRedisService.obtenerEstadoAsientos(eventoId);
-        log.info("DTO parseado -> eventoId={}, asientos={}",
+        log.info("[DevTest] DTO parseado -> eventoId={}, asientos={}",
                 dto.getEventoId(),
                 dto.getAsientos().size());
 
-        log.info("=== FIN DE PRUEBA DE REDIS ===");
+        log.info("=== [RedisTestRunner] FIN DE PRUEBA DE REDIS ===");
     }
 }

@@ -17,8 +17,8 @@ public class EventoKafkaListener {
     )
     // Qué hacer cuando llega un mensaje → ejecutar onEventoActualizado
     public void onEventoActualizado(String mensaje) {
-        // Por ahora SOLO verifica que Kafka funciona.
-        log.info("📥 [Kafka] Mensaje recibido en eventos-actualizacion: {}", mensaje);
+        log.info("📡 [Kafka] Mensaje recibido en eventos-actualizacion");
+        log.debug("📡 [Kafka] Payload recibido: {}", mensaje);
     }
 }
 
