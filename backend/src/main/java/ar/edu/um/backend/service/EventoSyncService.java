@@ -1,4 +1,5 @@
 package ar.edu.um.backend.service;
+
 import ar.edu.um.backend.domain.Evento;
 import ar.edu.um.backend.repository.EventoRepository;
 import ar.edu.um.backend.service.dto.ProxyEventoDTO;
@@ -26,16 +27,19 @@ import org.springframework.stereotype.Service;
  *        - si no existe en la BD → se crea
  *        - si existe → se actualiza
  *    4. Aplicar valores por defecto cuando la cátedra no provee campos.
+ *    5. Marcar como inactivos los eventos locales que ya no vengan del proxy.
  *
  * Este servicio solo maneja la tabla Evento.
  */
 @Service
 @Transactional  // Garantiza atomicidad: si falla algo → rollback de cambios
 public class EventoSyncService {
+
     private static final Logger log = LoggerFactory.getLogger(EventoSyncService.class);
-    private final ProxyService proxyService; // Cliente que consulta al proxy
+
+    private final ProxyService proxyService;          // Cliente que consulta al proxy
     private final EventoRepository eventoRepository; // Acceso a la base local
-    private final ObjectMapper objectMapper; // Convierte JSON → objetos Java
+    private final ObjectMapper objectMapper;          // Convierte JSON → objetos Java
 
     public EventoSyncService(ProxyService proxyService, EventoRepository eventoRepository, ObjectMapper objectMapper) {
         this.proxyService = proxyService;
@@ -66,6 +70,7 @@ public class EventoSyncService {
 
             log.info("📥 [Sync] Eventos recibidos desde proxy: {} evento(s).", remotos.size());
 
+            // Conjunto de IDs externos que siguen "vivos" en la cátedra
             Set<Long> externalIdsVigentes = new HashSet<>();
 
             // 3. Procesar evento por evento
@@ -88,9 +93,16 @@ public class EventoSyncService {
                     log.info("🆕 [Sync] Creando evento nuevo (externalId={}) → {}", remoto.getId(), remoto.getTitulo());
                     local.setExternalId(remoto.getId());
                 } else {
-                    log.info("♻️  [Sync] Actualizando evento existente (id={}, externalId={}) → {}",
-                        local.getId(), remoto.getId(), remoto.getTitulo());
+                    log.info(
+                        "♻️  [Sync] Actualizando evento existente (id={}, externalId={}) → {}",
+                        local.getId(),
+                        remoto.getId(),
+                        remoto.getTitulo()
+                    );
                 }
+
+                // Siempre que viene del proxy, el evento debe quedar activo
+                local.setActivo(true);
 
                 // -------------- MAPEO DE CAMPOS -----------------
 
@@ -98,7 +110,11 @@ public class EventoSyncService {
                 LocalDate fecha = remoto.getFecha();
                 if (fecha == null) {
                     fecha = LocalDate.now(); // fallback si cátedra no envía fecha
-                    log.warn("⚠️  [Sync] El evento {} no tiene fecha en el proxy. Se asigna fecha actual: {}", remoto.getId(), fecha);
+                    log.warn(
+                        "⚠️  [Sync] El evento {} no tiene fecha en el proxy. Se asigna fecha actual: {}",
+                        remoto.getId(),
+                        fecha
+                    );
                 }
                 local.setFecha(fecha);
 
@@ -114,18 +130,19 @@ public class EventoSyncService {
                 Integer filas = remoto.getFilaAsientos();
                 Integer columnas = remoto.getColumnaAsientos();
 
-                if (filas == null || columnas == null) {
-                    log.warn(
-                        "⚠️  [Sync] Evento {} sin información completa de asientos (filas={}, cols={}). Se asigna 0.",
+               // Validación estricta según reglas del dominio
+                if (filas == null || columnas == null || filas <= 0 || columnas <= 0) {
+                    log.error(
+                        "❌ [Sync] Evento {} tiene datos inválidos de asientos (filas={}, cols={}). Evento NO sincronizado.",
                         remoto.getId(), filas, columnas
                     );
-                    filas = (filas != null) ? filas : 0;
-                    columnas = (columnas != null) ? columnas : 0;
+                    continue; // NO guardar en BD
                 }
 
                 local.setFilaAsientos(filas);
                 local.setColumnaAsientos(columnas);
                 local.setCantidadAsientosTotales(filas * columnas);
+
 
                 // DATOS GENERALES
                 local.setTitulo(remoto.getTitulo());
@@ -136,8 +153,33 @@ public class EventoSyncService {
                 // 4. Guardar cambios en BD
                 eventoRepository.save(local);
 
-                log.info("💾 [DB] Evento guardado → idLocal={}, externalId={}, titulo={}",
-                    local.getId(), remoto.getId(), local.getTitulo());
+                log.info(
+                    "💾 [DB] Evento guardado → idLocal={}, externalId={}, titulo={}",
+                    local.getId(),
+                    remoto.getId(),
+                    local.getTitulo()
+                );
+            }
+
+            // 5. Marcar como inactivos los eventos que ya no vengan desde la cátedra
+            List<Evento> eventosConExternalId = eventoRepository.findByExternalIdIsNotNull();
+
+            for (Evento eventoLocal : eventosConExternalId) {
+                Long externalId = eventoLocal.getExternalId();
+
+                if (externalId != null
+                    && !externalIdsVigentes.contains(externalId)
+                    && Boolean.TRUE.equals(eventoLocal.getActivo())) {
+
+                    eventoLocal.setActivo(false);
+                    eventoRepository.save(eventoLocal);
+
+                    log.info(
+                        "🗑️  [Sync] Evento externalId={} marcado como inactivo (idLocal={})",
+                        externalId,
+                        eventoLocal.getId()
+                    );
+                }
             }
 
             log.info("✅ [Sync] Sincronización finalizada correctamente.");

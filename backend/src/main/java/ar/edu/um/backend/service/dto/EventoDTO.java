@@ -11,7 +11,6 @@ import java.util.Objects;
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class EventoDTO implements Serializable {
-
     private Long id;
 
     @NotNull
@@ -39,6 +38,8 @@ public class EventoDTO implements Serializable {
     @NotNull
     @Min(1)
     private Integer columnaAsientos;
+
+    private Boolean activo;
 
     public Long getId() {
         return id;
@@ -120,6 +121,14 @@ public class EventoDTO implements Serializable {
         this.columnaAsientos = columnaAsientos;
     }
 
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -155,6 +164,7 @@ public class EventoDTO implements Serializable {
             ", cantidadAsientosTotales=" + getCantidadAsientosTotales() +
             ", filaAsientos=" + getFilaAsientos() +
             ", columnaAsientos=" + getColumnaAsientos() +
+            ", activo=" + getActivo() +
             "}";
     }
 }

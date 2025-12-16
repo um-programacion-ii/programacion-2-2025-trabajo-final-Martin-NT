@@ -137,7 +137,7 @@ public class EventoResource {
      */
     @GetMapping("")
     public List<EventoDTO> getAllEventos() {
-        LOG.debug("REST request to get all Eventos");
+        LOG.debug("REST request to get all Active Eventos");
         return eventoService.findAll();
     }
 
@@ -149,7 +149,7 @@ public class EventoResource {
      */
     @GetMapping("/{id}")
     public ResponseEntity<EventoDTO> getEvento(@PathVariable("id") Long id) {
-        LOG.debug("REST request to get Evento : {}", id);
+        LOG.debug("REST request to get Active Evento : {}", id);
         Optional<EventoDTO> eventoDTO = eventoService.findOne(id);
         return ResponseUtil.wrapOrNotFound(eventoDTO);
     }
