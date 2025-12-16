@@ -120,3 +120,12 @@ catservice:
 kafka:
   broker: ${KAFKA_BROKER:192.168.194.250:9092}
   topic: ${KAFKA_TOPIC:tp-final-topic-pendiente}
+
+# ===================================================================
+# Configuración específica de la app
+# ===================================================================
+app:
+  # ⏱️ CONFIGURACIÓN DE EXPIRACIÓN DE SESIÓN
+  # Permite cambiar el tiempo sin recompilar el código Java.
+  # Valor oficial: 30 (minutos).
+  session-timeout-minutes: 30
