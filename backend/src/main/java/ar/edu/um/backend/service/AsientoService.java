@@ -63,4 +63,14 @@ public interface AsientoService {
      * @param id the id of the entity.
      */
     void delete(Long id);
+
+    /**
+     * Obtiene todos los asientos de un evento,
+     * ordenados por fila y columna.
+     *
+     * @param eventoId el ID del evento.
+     * @return la lista de asientos ordenados.
+     */
+    List<AsientoDTO> findByEventoOrdered(Long eventoId);
+
 }

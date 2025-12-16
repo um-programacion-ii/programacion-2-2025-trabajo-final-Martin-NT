@@ -6,5 +6,5 @@ package ar.edu.um.backend.domain.enumeration;
 public enum AsientoEstado {
     LIBRE,
     BLOQUEADO,
-    OCUPADO,
+    VENDIDO,
 }

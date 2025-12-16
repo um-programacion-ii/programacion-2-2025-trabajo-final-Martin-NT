@@ -16,9 +16,11 @@ public class AsientoDTO implements Serializable {
     private Long id;
 
     @NotNull
+    @Min(1)
     private Integer fila;
 
     @NotNull
+    @Min(1)
     private Integer columna;
 
     @NotNull
