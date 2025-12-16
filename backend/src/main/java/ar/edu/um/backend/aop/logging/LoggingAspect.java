@@ -11,12 +11,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.web.server.ResponseStatusException;
 import tech.jhipster.config.JHipsterConstants;
 
 /**
- * Aspect for logging execution of service and repository Spring components.
+ * Aspecto para el logging de ejecución de componentes Service, Repository y RestController.
  *
- * By default, it only runs with the "dev" profile.
+ * Evita mostrar stacktraces innecesarios en errores controlados (ej. 404).
+ * Solo muestra trazas completas en errores reales del servidor (5xx).
  */
 @Aspect
 public class LoggingAspect {
@@ -28,84 +30,96 @@ public class LoggingAspect {
     }
 
     /**
-     * Pointcut that matches all repositories, services and Web REST endpoints.
+     * Pointcut que aplica a todos los repositorios, servicios y controladores REST.
      */
     @Pointcut(
         "within(@org.springframework.stereotype.Repository *)" +
-        " || within(@org.springframework.stereotype.Service *)" +
-        " || within(@org.springframework.web.bind.annotation.RestController *)"
+            " || within(@org.springframework.stereotype.Service *)" +
+            " || within(@org.springframework.web.bind.annotation.RestController *)"
     )
-    public void springBeanPointcut() {
-        // Method is empty as this is just a Pointcut, the implementations are in the advices.
-    }
+    public void springBeanPointcut() {}
 
     /**
-     * Pointcut that matches all Spring beans in the application's main packages.
+     * Pointcut que aplica a los paquetes principales de la app.
      */
     @Pointcut(
-        "within(ar.edu.um.backend.repository..*)" + " || within(ar.edu.um.backend.service..*)" + " || within(ar.edu.um.backend.web.rest..*)"
+        "within(ar.edu.um.backend.repository..*)" +
+            " || within(ar.edu.um.backend.service..*)" +
+            " || within(ar.edu.um.backend.web.rest..*)"
     )
-    public void applicationPackagePointcut() {
-        // Method is empty as this is just a Pointcut, the implementations are in the advices.
-    }
+    public void applicationPackagePointcut() {}
 
     /**
-     * Retrieves the {@link Logger} associated to the given {@link JoinPoint}.
-     *
-     * @param joinPoint join point we want the logger for.
-     * @return {@link Logger} associated to the given {@link JoinPoint}.
+     * Obtiene el logger del joinPoint actual.
      */
     private Logger logger(JoinPoint joinPoint) {
         return LoggerFactory.getLogger(joinPoint.getSignature().getDeclaringTypeName());
     }
 
     /**
-     * Advice that logs methods throwing exceptions.
-     *
-     * @param joinPoint join point for advice.
-     * @param e exception.
+     * Logging de excepciones lanzadas.
+     * Evita mostrar stacktrace completo en errores controlados (ej. 404).
      */
     @AfterThrowing(pointcut = "applicationPackagePointcut() && springBeanPointcut()", throwing = "e")
     public void logAfterThrowing(JoinPoint joinPoint, Throwable e) {
+        Logger log = logger(joinPoint);
+
+        // 1) Errores de negocio (validaciones) → sin stacktrace
+        if (e instanceof IllegalStateException || e instanceof IllegalArgumentException) {
+            log.warn(
+                "⚠️  [Negocio] {}() falló: {}",
+                joinPoint.getSignature().getName(),
+                e.getMessage()
+            );
+            return;
+        }
+
+        // 2) Excepciones HTTP 4xx (ej: ResponseStatusException 400/404) → sin stacktrace
+        if (e instanceof ResponseStatusException rse && rse.getStatusCode().is4xxClientError()) {
+            log.warn(
+                "⚠️  {}() -> {}",
+                joinPoint.getSignature().getName(),
+                rse.getMessage()
+            );
+            return;
+        }
+
+        // 3) Errores "reales" del servidor (bugs) → acá sí queremos ver bien qué pasó
         if (env.acceptsProfiles(Profiles.of(JHipsterConstants.SPRING_PROFILE_DEVELOPMENT))) {
-            logger(joinPoint).error(
-                "Exception in {}() with cause = '{}' and exception = '{}'",
+            log.error(
+                "❌ Exception in {}() with cause='{}' and exception='{}'",
                 joinPoint.getSignature().getName(),
                 e.getCause() != null ? e.getCause() : "NULL",
                 e.getMessage(),
-                e
+                e // acá sí dejamos el stacktrace completo para debug
             );
         } else {
-            logger(joinPoint).error(
-                "Exception in {}() with cause = {}",
+            log.error(
+                "❌ Exception in {}() with cause={}",
                 joinPoint.getSignature().getName(),
-                e.getCause() != null ? String.valueOf(e.getCause()) : "NULL"
+                e.getCause() != null ? e.getCause() : "NULL"
             );
         }
     }
 
+
     /**
-     * Advice that logs when a method is entered and exited.
-     *
-     * @param joinPoint join point for advice.
-     * @return result.
-     * @throws Throwable throws {@link IllegalArgumentException}.
+     * Logging de entrada/salida de métodos (solo si DEBUG activo).
      */
     @Around("applicationPackagePointcut() && springBeanPointcut()")
     public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
         Logger log = logger(joinPoint);
         if (log.isDebugEnabled()) {
-            log.debug("Enter: {}() with argument[s] = {}", joinPoint.getSignature().getName(), Arrays.toString(joinPoint.getArgs()));
+            log.debug("➡️  Enter: {}() with args={}", joinPoint.getSignature().getName(), Arrays.toString(joinPoint.getArgs()));
         }
-        try {
-            Object result = joinPoint.proceed();
-            if (log.isDebugEnabled()) {
-                log.debug("Exit: {}() with result = {}", joinPoint.getSignature().getName(), result);
-            }
-            return result;
-        } catch (IllegalArgumentException e) {
-            log.error("Illegal argument: {} in {}()", Arrays.toString(joinPoint.getArgs()), joinPoint.getSignature().getName());
-            throw e;
+
+        Object result = joinPoint.proceed();
+
+        if (log.isDebugEnabled()) {
+            log.debug("⬅️  Exit: {}() with result={}", joinPoint.getSignature().getName(), result);
         }
+
+        return result;
     }
+
 }

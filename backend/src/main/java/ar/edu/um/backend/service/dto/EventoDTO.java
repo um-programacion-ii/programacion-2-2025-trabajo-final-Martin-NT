@@ -2,6 +2,7 @@ package ar.edu.um.backend.service.dto;
 
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Objects;
@@ -38,6 +39,8 @@ public class EventoDTO implements Serializable {
     @NotNull
     @Min(1)
     private Integer columnaAsientos;
+
+    private BigDecimal precioEntrada;
 
     private Boolean activo;
 
@@ -129,6 +132,14 @@ public class EventoDTO implements Serializable {
         this.activo = activo;
     }
 
+    public BigDecimal getPrecioEntrada() {
+        return precioEntrada;
+    }
+
+    public void setPrecioEntrada(BigDecimal precioEntrada) {
+        this.precioEntrada = precioEntrada;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -164,6 +175,7 @@ public class EventoDTO implements Serializable {
             ", cantidadAsientosTotales=" + getCantidadAsientosTotales() +
             ", filaAsientos=" + getFilaAsientos() +
             ", columnaAsientos=" + getColumnaAsientos() +
+            ", precioEntrada='" + getPrecioEntrada() + "'" +
             ", activo=" + getActivo() +
             "}";
     }

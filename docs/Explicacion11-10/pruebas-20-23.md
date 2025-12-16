@@ -5,13 +5,13 @@ A continuación se detallan las pruebas **reales** que podés mostrar en vivo de
 - Levantar Backend con ./mvnw
 - Levantar Proxy con ./boot.sh
 
----
-
 ## Issues
 - Integración del backend con el proxy y sincronización local de eventos #20
 - Baja lógica de eventos eliminados en la cátedra #21
 - Sincronización de asientos del evento #22
 - Integración con Redis para estado de asientos en tiempo real #23
+
+---
 
 ## 🔹 1. Probar sincronización manual  (#20 - #21 - #22)
 
@@ -626,3 +626,18 @@ EstadoAsientosRedisService: Se parseó correctamente estado de asientos para eve
 ```
 
 ---
+
+
+pruebas de bloqueo 
+
+En estado-asientos-tiempo-real
+http://localhost:8080/api/eventos/1052/asientos
+
+ver asientos libres 
+
+en P6 Bloquear asientos 
+
+En estado-asientos-tiempo-real
+http://localhost:8080/api/eventos/1052/asientos
+
+revisar que este bloqueado

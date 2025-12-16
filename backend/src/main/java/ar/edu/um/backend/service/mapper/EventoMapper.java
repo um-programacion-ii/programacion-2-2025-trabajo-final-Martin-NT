@@ -8,4 +8,5 @@ import org.mapstruct.*;
  * Mapper for the entity {@link Evento} and its DTO {@link EventoDTO}.
  */
 @Mapper(componentModel = "spring")
-public interface EventoMapper extends EntityMapper<EventoDTO, Evento> {}
+public interface EventoMapper extends EntityMapper<EventoDTO, Evento> {
+}

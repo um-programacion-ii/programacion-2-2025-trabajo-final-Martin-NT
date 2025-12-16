@@ -48,3 +48,5 @@ logging:
     # Lo dejamos en WARN para mostrar solo advertencias/errores reales.
     org.apache.kafka: WARN
 
+    feign: DEBUG
+    ar.edu.um.proxyservice.client.CatServiceFeignClient: DEBUG

@@ -13,7 +13,7 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 /**
- * A Venta.
+ * Entidad JPA que representa una venta registrada en la base de datos local.
  */
 @Entity
 @Table(name = "venta")
@@ -28,6 +28,12 @@ public class Venta implements Serializable {
     @SequenceGenerator(name = "sequenceGenerator")
     @Column(name = "id")
     private Long id;
+
+    /**
+     * Identificador de la venta en el sistema remoto (cátedra),
+     */
+    @Column(name = "external_id")
+    private Long externalId;
 
     @NotNull
     @Column(name = "fecha_venta", nullable = false)
@@ -77,6 +83,19 @@ public class Venta implements Serializable {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getExternalId() {
+        return externalId;
+    }
+
+    public void setExternalId(Long externalId) {
+        this.externalId = externalId;
+    }
+
+    public Venta externalId(Long externalId) {
+        this.externalId = externalId;
+        return this;
     }
 
     public LocalDate getFechaVenta() {

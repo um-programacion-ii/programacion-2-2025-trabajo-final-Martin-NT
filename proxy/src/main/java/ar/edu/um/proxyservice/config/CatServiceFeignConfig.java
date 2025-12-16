@@ -1,15 +1,21 @@
 package ar.edu.um.proxyservice.config;
+
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
 /**
  * Configuración Feign para llamar al servicio de la cátedra.
- * Agrega el header Authorization: Bearer <token> en todas las requests.
+ * Agrega el header Authorization: Bearer <token> en todas las requests
+ * y habilita logs detallados de Feign.
  */
+@Configuration
 public class CatServiceFeignConfig {
+
     private static final Logger log = LoggerFactory.getLogger(CatServiceFeignConfig.class);
 
     @Value("${catedra.jwt-token:}")
@@ -28,5 +34,11 @@ public class CatServiceFeignConfig {
                 template.header("Authorization", "Bearer " + catedraJwtToken);
             }
         };
+    }
+
+    @Bean
+    public feign.Logger.Level feignLoggerLevel() {
+        // FULL → loguea request y response completos
+        return feign.Logger.Level.FULL;
     }
 }

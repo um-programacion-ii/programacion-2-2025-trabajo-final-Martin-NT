@@ -5,6 +5,6 @@ package ar.edu.um.backend.domain.enumeration;
  */
 public enum VentaEstado {
     PENDIENTE,
-    EXITOSA,
-    FALLIDA,
+    CONFIRMADA,
+    RECHAZADA,
 }

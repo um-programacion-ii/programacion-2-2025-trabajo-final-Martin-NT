@@ -1,9 +1,8 @@
 package ar.edu.um.backend.service.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
-
 /**
  * DTO que representa la estructura de un "Evento" tal como lo envía
  * el proxy-service (y originalmente la cátedra).
@@ -14,24 +13,32 @@ import java.time.LocalTime;
  * El EventoSyncService transforma este DTO en una entidad Evento local.
  */
 public class ProxyEventoDTO {
+
     /**
      * ID real del evento en la cátedra.
-     * Este valor se guarda como "externalId" en la entidad Evento local.
-     * Permite saber qué evento local corresponde a cuál evento remoto.
+     * Se guarda como externalId en el Evento local.
      */
     private Long id;
     private String titulo;
     private String descripcion;
     private LocalDate fecha;
-    private LocalTime hora; // Si es null se setea 00:00.
+    private LocalTime hora;
     private String organizador;
     private String presentadores;
     private Integer cantidadAsientosTotales;
     private Integer filaAsientos;
-    @JsonProperty("columnAsientos")  // Nombre EXACTO del JSON de la cátedra
+    @JsonProperty("columnAsientos")
     private Integer columnaAsientos;
+    /**
+     * Precio de entrada del evento.
+     * Campo OBLIGATORIO para el backend local.
+     */
+    private BigDecimal precioEntrada;
 
+    // =======================
     // GETTERS & SETTERS
+    // =======================
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -63,4 +70,7 @@ public class ProxyEventoDTO {
 
     public Integer getColumnaAsientos() { return columnaAsientos; }
     public void setColumnaAsientos(Integer columnaAsientos) { this.columnaAsientos = columnaAsientos; }
+
+    public BigDecimal getPrecioEntrada() { return precioEntrada; }
+    public void setPrecioEntrada(BigDecimal precioEntrada) { this.precioEntrada = precioEntrada; }
 }
