@@ -32,9 +32,10 @@ spring:
       indent-output: true
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:postgresql://localhost:5432/backendCatedra
-    username: backendCatedra
-    password:
+    # ahora lee de SPRING_DATASOURCE_URL / USERNAME / PASSWORD
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/backendCatedra}
+    username: ${SPRING_DATASOURCE_USERNAME:backendCatedra}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
     hikari:
       poolName: Hikari
       auto-commit: false
@@ -66,7 +67,7 @@ jhipster:
   cache: # Cache configuration
     redis: # Redis configuration
       expiration: 3600 # By default objects stay 1 hour (in seconds) in the cache
-      server: redis://localhost:6379
+      server: redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}
       cluster: false
       # server: redis://localhost:6379,redis://localhost:16379,redis://localhost:26379
       # cluster: true
@@ -113,5 +114,9 @@ jhipster:
 # Configuración del servicio de la cátedra
 # ===================================================================
 catservice:
-  url: ${CAT_SERVICE_URL:http://SERVIDOR_CATEDRA:PUERTO/api}
+  url: ${CAT_SERVICE_URL:http://192.168.194.250:8080/api}
   token: ${CAT_SERVICE_TOKEN:}
+
+kafka:
+  broker: ${KAFKA_BROKER:192.168.194.250:9092}
+  topic: ${KAFKA_TOPIC:tp-final-topic-pendiente}
