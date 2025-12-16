@@ -1,0 +1,188 @@
+<div class="d-flex justify-content-center">
+  <div class="col-8">
+    <form name="editForm" novalidate (ngSubmit)="save()" [formGroup]="editForm">
+      <h2 id="jhi-venta-heading" data-cy="VentaCreateUpdateHeading" jhiTranslate="backendCatedraApp.venta.home.createOrEditLabel">
+        Crear o editar Venta
+      </h2>
+
+      <div>
+        <jhi-alert-error />
+
+        @if (editForm.controls.id.value !== null) {
+          <div class="mb-3">
+            <label class="form-label" for="field_id" jhiTranslate="backendCatedraApp.venta.id">ID</label>
+            <input type="number" class="form-control" name="id" id="field_id" data-cy="id" formControlName="id" [readonly]="true" />
+          </div>
+        }
+
+        @let fechaVentaRef = editForm.get('fechaVenta')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_fechaVenta" jhiTranslate="backendCatedraApp.venta.fechaVenta">Fecha Venta</label>
+          <div class="input-group">
+            <input
+              id="field_fechaVenta"
+              data-cy="fechaVenta"
+              type="text"
+              class="form-control"
+              name="fechaVenta"
+              ngbDatepicker
+              #fechaVentaDp="ngbDatepicker"
+              formControlName="fechaVenta"
+            />
+            <button type="button" class="btn btn-secondary" (click)="fechaVentaDp.toggle()"><fa-icon icon="calendar-alt"></fa-icon></button>
+          </div>
+          @if (fechaVentaRef.invalid && (fechaVentaRef.dirty || fechaVentaRef.touched)) {
+            <div>
+              @if (editForm.get('fechaVenta')?.errors?.required) {
+                <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+              }
+            </div>
+          }
+        </div>
+
+        @let estadoRef = editForm.get('estado')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_estado" jhiTranslate="backendCatedraApp.venta.estado">Estado</label>
+          <select class="form-control" name="estado" formControlName="estado" id="field_estado" data-cy="estado">
+            <option [ngValue]="null">{{ 'backendCatedraApp.VentaEstado.null' | translate }}</option>
+            @for (ventaEstado of ventaEstadoValues; track $index) {
+              <option [value]="ventaEstado">{{ 'backendCatedraApp.VentaEstado.' + ventaEstado | translate }}</option>
+            }
+          </select>
+          @if (estadoRef.invalid && (estadoRef.dirty || estadoRef.touched)) {
+            <div>
+              @if (editForm.get('estado')?.errors?.required) {
+                <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="field_descripcion" jhiTranslate="backendCatedraApp.venta.descripcion">Descripcion</label>
+          <input
+            type="text"
+            class="form-control"
+            name="descripcion"
+            id="field_descripcion"
+            data-cy="descripcion"
+            formControlName="descripcion"
+          />
+        </div>
+
+        @let precioVentaRef = editForm.get('precioVenta')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_precioVenta" jhiTranslate="backendCatedraApp.venta.precioVenta">Precio Venta</label>
+          <input
+            type="number"
+            class="form-control"
+            name="precioVenta"
+            id="field_precioVenta"
+            data-cy="precioVenta"
+            formControlName="precioVenta"
+          />
+          @if (precioVentaRef.invalid && (precioVentaRef.dirty || precioVentaRef.touched)) {
+            <div>
+              @if (editForm.get('precioVenta')?.errors?.required) {
+                <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+              }
+              <small
+                class="form-text text-danger"
+                [hidden]="!editForm.get('precioVenta')?.errors?.number"
+                jhiTranslate="entity.validation.number"
+                >Este campo debe ser un número.</small
+              >
+            </div>
+          }
+        </div>
+
+        @let cantidadAsientosRef = editForm.get('cantidadAsientos')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_cantidadAsientos" jhiTranslate="backendCatedraApp.venta.cantidadAsientos"
+            >Cantidad Asientos</label
+          >
+          <input
+            type="number"
+            class="form-control"
+            name="cantidadAsientos"
+            id="field_cantidadAsientos"
+            data-cy="cantidadAsientos"
+            formControlName="cantidadAsientos"
+          />
+          @if (cantidadAsientosRef.invalid && (cantidadAsientosRef.dirty || cantidadAsientosRef.touched)) {
+            <div>
+              @if (editForm.get('cantidadAsientos')?.errors?.required) {
+                <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+              }
+              <small
+                class="form-text text-danger"
+                [hidden]="!editForm.get('cantidadAsientos')?.errors?.number"
+                jhiTranslate="entity.validation.number"
+                >Este campo debe ser un número.</small
+              >
+            </div>
+          }
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="field_evento" jhiTranslate="backendCatedraApp.venta.evento">Evento</label>
+          <select
+            class="form-control"
+            id="field_evento"
+            data-cy="evento"
+            name="evento"
+            formControlName="evento"
+            [compareWith]="compareEvento"
+          >
+            @if (editForm.get(['evento'])!.value === null) {
+              <option [ngValue]="null" selected></option>
+            }
+            @for (eventoOption of eventosSharedCollection; track $index) {
+              <option [ngValue]="eventoOption">{{ eventoOption.titulo }}</option>
+            }
+          </select>
+        </div>
+        @if (editForm.get(['evento'])!.invalid && (editForm.get(['evento'])!.dirty || editForm.get(['evento'])!.touched)) {
+          <div>
+            @if (editForm.get(['evento'])?.errors?.required) {
+              <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+            }
+          </div>
+        }
+
+        <div class="mb-3">
+          <label for="field_asientos" jhiTranslate="backendCatedraApp.venta.asientos">Asientos</label>
+          <select
+            class="form-control"
+            id="field_asientos"
+            data-cy="asientos"
+            multiple
+            name="asientos"
+            formControlName="asientos"
+            [compareWith]="compareAsiento"
+          >
+            @for (asientoOption of asientosSharedCollection; track $index) {
+              <option [ngValue]="asientoOption">{{ asientoOption.id }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <button type="button" id="cancel-save" data-cy="entityCreateCancelButton" class="btn btn-secondary" (click)="previousState()">
+          <fa-icon icon="ban"></fa-icon>&nbsp;<span jhiTranslate="entity.action.cancel">Cancelar</span>
+        </button>
+
+        <button
+          type="submit"
+          id="save-entity"
+          data-cy="entityCreateSaveButton"
+          [disabled]="editForm.invalid || isSaving"
+          class="btn btn-primary"
+        >
+          <fa-icon icon="save"></fa-icon>&nbsp;<span jhiTranslate="entity.action.save">Guardar</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
