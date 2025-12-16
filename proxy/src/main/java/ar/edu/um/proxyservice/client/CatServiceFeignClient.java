@@ -1,4 +1,5 @@
 package ar.edu.um.proxyservice.client;
+import ar.edu.um.proxyservice.config.CatServiceFeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,7 +11,8 @@ import org.springframework.web.bind.annotation.PathVariable;
  */
 @FeignClient(
         name = "cat-service",
-        url = "${catservice.url}"
+        url = "${catservice.url}",
+        configuration = CatServiceFeignConfig.class
 )
 public interface CatServiceFeignClient {
 
