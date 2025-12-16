@@ -156,6 +156,4 @@ coverage/
 .env
 
 # Documentos personales
-/docs/comandos_usados.md
-/docs/resumen_etapa1.md
-/docs/resumen_etapa2.md
+/docs/
