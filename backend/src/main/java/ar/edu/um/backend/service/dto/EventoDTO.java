@@ -33,9 +33,11 @@ public class EventoDTO implements Serializable {
     private Integer cantidadAsientosTotales;
 
     @NotNull
+    @Min(1)
     private Integer filaAsientos;
 
     @NotNull
+    @Min(1)
     private Integer columnaAsientos;
 
     public Long getId() {
