@@ -1,27 +1,11 @@
 # ===================================================================
 # Spring Boot configuration for the "dev" profile.
-#
-# This configuration overrides the application.yml file.
-#
-# More information on profiles: https://www.jhipster.tech/profiles/
-# More information on configuration properties: https://www.jhipster.tech/common-application-properties/
-# ===================================================================
-
-# ===================================================================
-# Standard Spring Boot properties.
-# Full reference is available at:
-# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
 # ===================================================================
 
 logging:
   level:
-    # Nivel general del sistema
     ROOT: INFO
-
-    # JHipster (ya lo tenías)
     tech.jhipster: DEBUG
-
-    # Reducimos ruido excesivo
     org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql.BasicBinder: WARN
     reactor.netty: WARN
@@ -41,21 +25,43 @@ spring:
       additional-exclude: static/**
     livereload:
       enabled: false
+
   jackson:
     serialization:
       indent-output: true
 
+  # ===================================================================
+  # Base de datos principal (POSTGRES - DEV)
+  # ===================================================================
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/backendCatedra}
     username: ${SPRING_DATASOURCE_USERNAME:backendCatedra}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    password: ${SPRING_DATASOURCE_PASSWORD:backendCatedra}
     hikari:
       poolName: Hikari
       auto-commit: false
 
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
   liquibase:
     contexts: dev, faker
+
+  # ===================================================================
+  # Lugar reservado para soporte H2 futuro (NO ACTIVADO)
+  #
+  # Para usar H2 más adelante, solo crearemos profile "h2"
+  # y habilitaremos algo como:
+  #
+  # spring:
+  #   datasource:
+  #     url: jdbc:h2:mem:backend;DB_CLOSE_DELAY=-1
+  #     driver-class-name: org.h2.Driver
+  #   jpa:
+  #     database-platform: org.hibernate.dialect.H2Dialect
+  #
+  # ===================================================================
 
   mail:
     host: localhost
@@ -72,7 +78,7 @@ server:
   forward-headers-strategy: native
 
 # ===================================================================
-# JHipster specific properties
+# JHipster configuration
 # ===================================================================
 
 jhipster:
@@ -118,7 +124,7 @@ catservice:
   token: ${CAT_SERVICE_TOKEN:}
 
 # ===================================================================
-# Kafka (para notificaciones indirectas)
+# Kafka
 # ===================================================================
 
 kafka:
@@ -138,5 +144,4 @@ proxy:
 # ===================================================================
 
 app:
-  # Tiempo de expiración de sesión (en minutos)
   session-timeout-minutes: 30

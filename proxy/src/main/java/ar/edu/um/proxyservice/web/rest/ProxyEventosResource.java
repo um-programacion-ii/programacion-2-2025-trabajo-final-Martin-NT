@@ -135,5 +135,20 @@ public class ProxyEventosResource {
         }
     }
 
+    /**
+     * GET /api/proxy/eventos/{id}/asientos
+     * Para que el backend consulte los asientos de un evento.
+     * Devuelve el JSON crudo de asientos de un evento, tal como lo expone la cátedra.
+     */
+    @GetMapping("/eventos/{id}/asientos")
+    public ResponseEntity<EstadoAsientosRemotoDTO> obtenerAsientosEvento(@PathVariable Long id) {
+        log.info("🌐 [Proxy] GET /api/proxy/eventos/{}/asientos", id);
+
+        // Leemos SIEMPRE desde Redis remoto de la cátedra
+        EstadoAsientosRemotoDTO dto = estadoAsientosRedisService.obtenerEstadoAsientos(id);
+
+        // El service NUNCA devuelve null: siempre hay un DTO (con lista posiblemente vacía)
+        return ResponseEntity.ok(dto);
+    }
 
 }

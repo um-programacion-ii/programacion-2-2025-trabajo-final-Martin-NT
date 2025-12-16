@@ -1,5 +1,4 @@
 package ar.edu.um.backend.service;
-
 import ar.edu.um.backend.domain.Evento;
 import ar.edu.um.backend.repository.EventoRepository;
 import ar.edu.um.backend.service.dto.ProxyEventoDTO;
@@ -11,55 +10,67 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
 /**
  * Servicio encargado de sincronizar la base de datos local de eventos
  * con la información real proveniente de la cátedra, accesible a través del proxy.
  *
  * Este servicio se ejecuta cuando:
  *   - el administrador lo solicita manualmente,
- *   - el proxy notifica cambios (Kafka → proxy → backend),
+ *   - el proxy notifica cambios (Kafka → proxy → backend).
  *
  * El proceso consiste en:
  *    1. Obtener el JSON real de eventos desde el proxy.
- *    2. Convertir el JSON en ProxyEventoDTO.
+ *    2. Convertir el JSON en {@link ProxyEventoDTO}.
  *    3. Por cada evento:
  *        - si no existe en la BD → se crea
  *        - si existe → se actualiza
  *    4. Aplicar valores por defecto cuando la cátedra no provee campos.
- *    5. Marcar como inactivos los eventos locales que ya no vengan del proxy.
+ *    5. Sincronizar asientos de cada evento usando {@link AsientoSyncService}.
+ *    6. Marcar como inactivos los eventos locales que ya no vengan del proxy.
  *
- * Este servicio solo maneja la tabla Evento.
+ * Es el "orquestador" principal de la sincronización de eventos y asientos.
  */
 @Service
 @Transactional  // Garantiza atomicidad: si falla algo → rollback de cambios
 public class EventoSyncService {
-
     private static final Logger log = LoggerFactory.getLogger(EventoSyncService.class);
-
     private final ProxyService proxyService;          // Cliente que consulta al proxy
     private final EventoRepository eventoRepository; // Acceso a la base local
     private final ObjectMapper objectMapper;          // Convierte JSON → objetos Java
+    private final AsientoSyncService asientoSyncService;
 
-    public EventoSyncService(ProxyService proxyService, EventoRepository eventoRepository, ObjectMapper objectMapper) {
+    public EventoSyncService(
+        ProxyService proxyService,
+        EventoRepository eventoRepository,
+        ObjectMapper objectMapper,
+        AsientoSyncService asientoSyncService
+    ) {
         this.proxyService = proxyService;
         this.eventoRepository = eventoRepository;
         this.objectMapper = objectMapper;
+        this.asientoSyncService = asientoSyncService;
     }
 
     /**
      * Sincroniza los eventos locales con los datos provenientes del proxy.
-     * Metodo central de sincronización.
+     *
+     * Flujo:
+     *  - Llama a {@link ProxyService#listarEventosCompletos()} para obtener el JSON.
+     *  - Parsea a un arreglo de {@link ProxyEventoDTO}.
+     *  - Crea/actualiza eventos locales según su externalId.
+     *  - Valida datos críticos (fecha, hora, filas/columnas de asientos).
+     *  - Llama a {@link AsientoSyncService} para sincronizar asientos evento por evento.
+     *  - Marca como inactivos los eventos que ya no vienen en el listado remoto.
      */
     public void sincronizarEventosDesdeProxy() {
 
-        log.info("🔄 [Sync] Iniciando sincronización de eventos contra proxy...");
+        log.info("🔄 [Sync-Eventos] Iniciando sincronización de eventos contra proxy...");
 
         // 1. Obtener JSON desde el proxy
         String json = proxyService.listarEventosCompletos();
 
         if (json == null) {
-            log.warn("⚠️  [Sync] No se pudo obtener la lista de eventos desde el proxy. Cancelando sincronización.");
+            log.warn("⚠️  [Sync-Eventos] No se pudo obtener la lista de eventos desde el proxy. Cancelando sincronización.");
             return;
         }
 
@@ -68,7 +79,7 @@ public class EventoSyncService {
             ProxyEventoDTO[] remotosArray = objectMapper.readValue(json, ProxyEventoDTO[].class);
             List<ProxyEventoDTO> remotos = Arrays.asList(remotosArray);
 
-            log.info("📥 [Sync] Eventos recibidos desde proxy: {} evento(s).", remotos.size());
+            log.info("📥 [Sync-Eventos] Eventos recibidos desde proxy: {} evento(s).", remotos.size());
 
             // Conjunto de IDs externos que siguen "vivos" en la cátedra
             Set<Long> externalIdsVigentes = new HashSet<>();
@@ -78,7 +89,7 @@ public class EventoSyncService {
 
                 // Validación mínima: todo evento debe tener un ID externo
                 if (remoto.getId() == null) {
-                    log.warn("⚠️  [Sync] Evento remoto ignorado (sin ID). Título={}", remoto.getTitulo());
+                    log.warn("⚠️  [Sync-Eventos] Evento remoto ignorado (sin ID). Título={}", remoto.getTitulo());
                     continue;
                 }
 
@@ -90,11 +101,11 @@ public class EventoSyncService {
 
                 // Crear o actualizar
                 if (local.getId() == null) {
-                    log.info("🆕 [Sync] Creando evento nuevo (externalId={}) → {}", remoto.getId(), remoto.getTitulo());
+                    log.info("🆕 [Sync-Eventos] Creando evento nuevo (externalId={}) → {}", remoto.getId(), remoto.getTitulo());
                     local.setExternalId(remoto.getId());
                 } else {
                     log.info(
-                        "♻️  [Sync] Actualizando evento existente (id={}, externalId={}) → {}",
+                        "♻️  [Sync-Eventos] Actualizando evento existente (id={}, externalId={}) → {}",
                         local.getId(),
                         remoto.getId(),
                         remoto.getTitulo()
@@ -111,7 +122,7 @@ public class EventoSyncService {
                 if (fecha == null) {
                     fecha = LocalDate.now(); // fallback si cátedra no envía fecha
                     log.warn(
-                        "⚠️  [Sync] El evento {} no tiene fecha en el proxy. Se asigna fecha actual: {}",
+                        "⚠️  [Sync-Eventos] El evento {} no tiene fecha en el proxy. Se asigna fecha actual: {}",
                         remoto.getId(),
                         fecha
                     );
@@ -122,7 +133,7 @@ public class EventoSyncService {
                 LocalTime hora = remoto.getHora();
                 if (hora == null) {
                     hora = LocalTime.of(0, 0); // requerido por entidad local
-                    log.warn("⚠️  [Sync] El evento {} no tiene hora en el proxy. Se asigna 00:00.", remoto.getId());
+                    log.warn("⚠️  [Sync-Eventos] El evento {} no tiene hora en el proxy. Se asigna 00:00.", remoto.getId());
                 }
                 local.setHora(hora);
 
@@ -130,10 +141,10 @@ public class EventoSyncService {
                 Integer filas = remoto.getFilaAsientos();
                 Integer columnas = remoto.getColumnaAsientos();
 
-               // Validación estricta según reglas del dominio
+                // Validación estricta según reglas del dominio
                 if (filas == null || columnas == null || filas <= 0 || columnas <= 0) {
                     log.error(
-                        "❌ [Sync] Evento {} tiene datos inválidos de asientos (filas={}, cols={}). Evento NO sincronizado.",
+                        "❌ [Sync-Eventos] Evento {} tiene datos inválidos de asientos (filas={}, cols={}). Evento NO sincronizado.",
                         remoto.getId(), filas, columnas
                     );
                     continue; // NO guardar en BD
@@ -143,7 +154,6 @@ public class EventoSyncService {
                 local.setColumnaAsientos(columnas);
                 local.setCantidadAsientosTotales(filas * columnas);
 
-
                 // DATOS GENERALES
                 local.setTitulo(remoto.getTitulo());
                 local.setDescripcion(remoto.getDescripcion());
@@ -151,17 +161,20 @@ public class EventoSyncService {
                 local.setPresentadores(remoto.getPresentadores());
 
                 // 4. Guardar cambios en BD
-                eventoRepository.save(local);
+                Evento eventoGuardado = eventoRepository.save(local);
 
                 log.info(
                     "💾 [DB] Evento guardado → idLocal={}, externalId={}, titulo={}",
-                    local.getId(),
+                    eventoGuardado.getId(),
                     remoto.getId(),
-                    local.getTitulo()
+                    eventoGuardado.getTitulo()
                 );
+
+                // 5. Sincronizar asientos de este evento concreto
+                asientoSyncService.sincronizarAsientosDeEvento(eventoGuardado, remoto.getId());
             }
 
-            // 5. Marcar como inactivos los eventos que ya no vengan desde la cátedra
+            // 6. Marcar como inactivos los eventos que ya no vengan desde la cátedra
             List<Evento> eventosConExternalId = eventoRepository.findByExternalIdIsNotNull();
 
             for (Evento eventoLocal : eventosConExternalId) {
@@ -175,17 +188,17 @@ public class EventoSyncService {
                     eventoRepository.save(eventoLocal);
 
                     log.info(
-                        "🗑️  [Sync] Evento externalId={} marcado como inactivo (idLocal={})",
+                        "🗑️  [Sync-Eventos] Evento externalId={} marcado como inactivo (idLocal={})",
                         externalId,
                         eventoLocal.getId()
                     );
                 }
             }
 
-            log.info("✅ [Sync] Sincronización finalizada correctamente.");
+            log.info("✅ [Sync-Eventos] Sincronización de eventos finalizada correctamente.");
 
         } catch (Exception e) {
-            log.error("❌ [Sync] Error procesando JSON del proxy", e);
+            log.error("❌ [Sync-Eventos] Error procesando JSON del proxy", e);
         }
     }
 }
