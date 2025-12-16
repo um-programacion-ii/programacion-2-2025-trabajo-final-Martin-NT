@@ -26,9 +26,11 @@ public class VentaDTO implements Serializable {
     private String descripcion;
 
     @NotNull
+    @DecimalMin(value = "0.01")
     private BigDecimal precioVenta;
 
     @NotNull
+    @Min(1)
     private Integer cantidadAsientos;
 
     @NotNull

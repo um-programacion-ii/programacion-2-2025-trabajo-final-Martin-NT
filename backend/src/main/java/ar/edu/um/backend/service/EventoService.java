@@ -53,4 +53,19 @@ public interface EventoService {
      * @param id the id of the entity.
      */
     void delete(Long id);
+
+    /**
+     * Get all the eventos ordered by fecha and hora.
+     *
+     * @return the list of entities.
+     */
+    List<EventoDTO> findAllOrderedByFechaHora();
+
+    /**
+     * Get all the eventos ordered by titulo.
+     *
+     * @return the list of entities.
+     */
+    List<EventoDTO> findAllByOrderByTituloAsc();
 }
+

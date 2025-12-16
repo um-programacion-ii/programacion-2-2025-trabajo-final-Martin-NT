@@ -14,15 +14,21 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface AsientoRepository extends JpaRepository<Asiento, Long> {
+
+    // Métodos generados por JHipster
+    // para traer Asientos junto con su Evento (relación ManyToOne)
     default Optional<Asiento> findOneWithEagerRelationships(Long id) {
+        // Obtiene un asiento cargando también su evento (fetch join)
         return this.findOneWithToOneRelationships(id);
     }
 
     default List<Asiento> findAllWithEagerRelationships() {
+        // Obtiene todos los asientos cargando también su evento
         return this.findAllWithToOneRelationships();
     }
 
     default Page<Asiento> findAllWithEagerRelationships(Pageable pageable) {
+        // Obtiene todos los asientos paginados con su evento asociado
         return this.findAllWithToOneRelationships(pageable);
     }
 
@@ -37,4 +43,9 @@ public interface AsientoRepository extends JpaRepository<Asiento, Long> {
 
     @Query("select asiento from Asiento asiento left join fetch asiento.evento where asiento.id =:id")
     Optional<Asiento> findOneWithToOneRelationships(@Param("id") Long id);
+
+    // Devuelve todos los asientos de un evento específico,
+    // Ordenados por fila ascendente y columna ascendente.
+    List<Asiento> findByEventoIdOrderByFilaAscColumnaAsc(Long eventoId);
+
 }
