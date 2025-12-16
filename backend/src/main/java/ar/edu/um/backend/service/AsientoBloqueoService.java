@@ -7,6 +7,7 @@ import ar.edu.um.backend.service.dto.AsientoEstadoDTO;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 /**
@@ -37,12 +38,12 @@ public class AsientoBloqueoService {
      * Bloquea un asiento para un evento local.
      *
      * Reglas:
-     *  - fila / columna >= 1
-     *  - dentro del rango definido por el Evento (filas/columnas máximas)
-     *  - el evento debe estar activo
-     *  - no se bloquea si está vendido
-     *  - no se bloquea si ya está bloqueado vigente
-     *  - si el bloqueo expiró, se permite bloquear de nuevo
+     * - fila / columna >= 1
+     * - dentro del rango definido por el Evento (filas/columnas máximas)
+     * - el evento debe estar activo
+     * - no se bloquea si está vendido
+     * - no se bloquea si ya está bloqueado vigente
+     * - si el bloqueo expiró, se permite bloquear de nuevo
      */
     public AsientoBloqueoResponseDTO bloquearAsiento(Long eventoIdLocal, AsientoBloqueoRequestDTO request) {
         Integer fila = request.getFila();
@@ -104,8 +105,9 @@ public class AsientoBloqueoService {
         }
 
         // --- Registrar bloqueo real llamando al proxy ---
-        Long externalId = evento.getExternalId(); // ajustá el nombre del campo si es distinto
+        Long externalId = evento.getExternalId();
 
+        //
         proxyService.crearBloqueoEnProxy(externalId, fila, columna);
 
         // --- Armar respuesta al frontend ---
@@ -121,4 +123,3 @@ public class AsientoBloqueoService {
         return response;
     }
 }
-

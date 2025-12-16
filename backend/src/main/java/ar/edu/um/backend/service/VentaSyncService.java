@@ -342,16 +342,15 @@ public class VentaSyncService {
             return;
         }
 
-        Optional<Venta> optVenta = ventaRepository.findByExternalId(dto.getVentaId());
-        if (optVenta.isEmpty()) {
-            log.warn(
-                "⚠️ [Sync-Venta] No se encontró venta local con externalId={} para actualizar notificación.",
-                dto.getVentaId()
-            );
+        Venta venta;
+        try {
+            venta = ventaRepository
+                .findByExternalId(dto.getVentaId())
+                .orElseThrow(() -> new IllegalStateException("No se encontró venta local con externalId=" + dto.getVentaId()));
+        } catch (IllegalStateException e) {
+            log.warn("⚠️ [Sync-Venta] {}. No se actualiza nada.", e.getMessage());
             return;
         }
-
-        Venta venta = optVenta.get();
 
         // Actualizar estado según resultado
         if (Boolean.FALSE.equals(dto.getResultado())) {

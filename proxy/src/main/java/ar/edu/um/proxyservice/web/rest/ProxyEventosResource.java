@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
 import java.util.Map;
 /**
  * Controlador REST del proxy para exponer endpoints de eventos
@@ -133,40 +135,34 @@ public class ProxyEventosResource {
     @PostMapping("/eventos/{id}/bloqueos")
     public ResponseEntity<?> crearBloqueoEvento(
             @PathVariable Long id,
+            // Recibe el DTO enviado desde el Backend (que ya incluye fila, columna y personaActual/username)
             @RequestBody AsientoRemotoDTO asiento
     ) {
-        log.info(
-                "🔒 [Proxy] POST /api/proxy/eventos/{}/bloqueos fila={}, columna={}",
-                id,
-                asiento.getFila(),
-                asiento.getColumna()
-        );
+        log.info("🔒 [Proxy] POST /api/proxy/eventos/{}/bloqueos fila={}, columna={}",
+                id, asiento.getFila(), asiento.getColumna());
 
         if (asiento.getFila() == null || asiento.getColumna() == null) {
-            return ResponseEntity
-                    .badRequest()
-                    .body("{\"error\":\"fila y columna son obligatorias\"}");
+            return ResponseEntity.badRequest().body("{\"error\":\"fila y columna son obligatorias\"}");
         }
 
-        // Armamos el JSON que espera la cátedra: { "eventoId": X, "fila": Y, "columna": Z }
-        Map<String, Object> body = Map.of(
-                "eventoId", id,
-                "fila", asiento.getFila(),
-                "columna", asiento.getColumna()
-        );
+        // --- CONSTRUCCIÓN DEL PAYLOAD PLANO REQUERIDO POR LA CÁTEDRA ---
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("eventoId", id);
+        body.put("fila", asiento.getFila());
+        body.put("columna", asiento.getColumna());
 
         try {
-            catServiceClient.bloquearAsiento(body);
-            log.info("🔒 [Proxy] Bloqueo confirmado en la cátedra para eventoId={}, fila={}, columna={}",
-                    id, asiento.getFila(), asiento.getColumna());
-            return ResponseEntity.ok().build();
+            // Se envía el payload plano al Feign Client
+            Object respuesta = catServiceClient.bloquearAsiento(body);
+            return ResponseEntity.ok(respuesta);
         } catch (Exception e) {
             log.error("💥 [Proxy] Error al bloquear asiento en la cátedra para eventoId={}", id, e);
-            return ResponseEntity
-                    .status(HttpStatus.BAD_GATEWAY)
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .body("{\"error\":\"No se pudo bloquear el asiento en la cátedra\"}");
         }
     }
+
 
 
 

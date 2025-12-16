@@ -90,12 +90,13 @@ public class CatServiceClient {
     /**
      * POST /api/endpoints/v1/bloquear-asientos
      */
-    public void bloquearAsiento(Map<String, Object> bloqueoJson) {
+    public String bloquearAsiento(Map<String, Object> body) {
         String operacion = "bloquearAsiento";
         try {
-            log.info("🎓 [Cátedra] Llamando a {} vía Feign con payload={}", operacion, bloqueoJson);
-            feignClient.bloquearAsiento(bloqueoJson);
-            log.info("🎓 [Cátedra] Bloqueo registrado (200 OK) en la cátedra");
+            log.info("🎓 [Cátedra] Llamando a {} vía Feign con payload={}", operacion, body);
+            String resp = feignClient.bloquearAsiento(body);
+            log.info("🎓 [Cátedra] Respuesta {} -> bodyLength={}", operacion, resp != null ? resp.length() : null);
+            return resp;
         } catch (Exception e) {
             log.error("🎓 [Cátedra] Error llamando a {} vía Feign", operacion, e);
             throw e;

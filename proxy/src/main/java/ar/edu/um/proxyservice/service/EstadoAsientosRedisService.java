@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
+
+import java.time.Instant;
 import java.util.Collections;
 import org.springframework.data.redis.connection.DataType;
 import ar.edu.um.proxyservice.service.dto.AsientoRemotoDTO;
@@ -112,7 +114,7 @@ public class EstadoAsientosRedisService {
         DataType type = stringRedisTemplate.type(key);
 
         if (type == null || type == DataType.NONE) {
-            log.info("[Redis] No hay estado de asientos en Redis para eventoId={} (key {}).", eventoId, key);
+            log.info("[Redis] No hay estado de asientos en Redis para eventoId={} (key {}) TYPE QUE LLEGO {}.", eventoId, key, type);
             return dtoVacio(eventoId);
         }
 
@@ -204,6 +206,7 @@ public class EstadoAsientosRedisService {
                 AsientoRemotoDTO dto = new AsientoRemotoDTO();
                 dto.setFila(fc.fila());
                 dto.setColumna(fc.columna());
+                dto.setExpira(seat.getExpira());
 
                 // Normalizamos el estado al formato usado por el backend ("Bloqueado"/"Vendido").
                 if ("BLOQUEADO".equalsIgnoreCase(seat.getStatus())) {
@@ -280,6 +283,7 @@ public class EstadoAsientosRedisService {
     private static class SeatHashEntry {
         private String seatId;
         private String status;
+        private Instant expira;
 
         public String getSeatId() {
             return seatId;
@@ -295,6 +299,14 @@ public class EstadoAsientosRedisService {
 
         public void setStatus(String status) {
             this.status = status;
+        }
+
+        public Instant getExpira() {
+            return expira;
+        }
+
+        public void setExpira(Instant expira) {
+            this.expira = expira;
         }
     }
 

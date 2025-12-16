@@ -35,10 +35,8 @@ public interface CatServiceFeignClient {
     )
     void crearVenta(@RequestBody Map<String, Object> ventaJson);
 
-    @PostMapping(
-            value = "/api/endpoints/v1/bloquear-asientos",
-            consumes = "application/json"
-    )
-    void bloquearAsiento(@RequestBody Map<String, Object> bloqueoJson);
+    @PostMapping(value = "/api/endpoints/v1/bloquear-asientos", consumes = "application/json")
+    String bloquearAsiento(@RequestBody Map<String, Object> body);
+
 
 }

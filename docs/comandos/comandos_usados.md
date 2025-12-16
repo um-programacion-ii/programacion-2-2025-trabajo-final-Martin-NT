@@ -824,3 +824,10 @@ cd proxy
 ./boot.sh
 
 
+# cuando no tome mi env
+set -a
+source .env
+set +a
+
+echo $CATEDRA_JWT_TOKEN | cut -c1-20
+echo $CAT_SERVICE_URL

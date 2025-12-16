@@ -20,11 +20,12 @@ spring:
     listener:
       missing-topics-fatal: false               # Si el topic no existe todavía, no rompe la aplicación.
 
+catedra:
+  jwt-token: ${CATEDRA_JWT_TOKEN:}
+
 catservice:
   url: ${CAT_SERVICE_URL:http://192.168.194.250:8080}  # URL base del servidor de la cátedra. Usado para leer eventos.
 
-catedra:
-  jwt-token: ${CATEDRA_JWT_TOKEN:}
 
 logging:
   level:

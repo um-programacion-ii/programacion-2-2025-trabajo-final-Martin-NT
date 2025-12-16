@@ -229,7 +229,7 @@ public class ProxyService {
      * POST /api/proxy/eventos/{externalId}/bloqueos
      *
      * Envía un bloqueo de asiento al proxy, que a su vez lo manda a la cátedra.
-     * Usa ProxyAsientoDTO como body (solo fila y columna).
+     * Usa ProxyAsientoDTO como body (incluyendo fila, columna y la identidad del usuario).
      *
      * @param externalId ID del evento en la cátedra.
      * @param fila fila del asiento a bloquear (>=1)
