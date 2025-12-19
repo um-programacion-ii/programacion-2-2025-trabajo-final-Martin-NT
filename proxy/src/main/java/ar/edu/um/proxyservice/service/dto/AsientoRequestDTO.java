@@ -4,10 +4,8 @@ import java.time.Instant;
  * DTO que representa un asiento tal como viene desde el Redis REMOTO de la cátedra
  * o como es enviado/recibido en los endpoints del proxy.
  *
- * Este objeto ahora incluye 'personaActual' para poder recibir el username
- * durante las llamadas de bloqueo desde el Backend.
  */
-public class AsientoRemotoDTO {
+public class AsientoRequestDTO { //AsientoRemotoDTO
     private Integer fila;
     private Integer columna;
     private String estado;
@@ -44,7 +42,6 @@ public class AsientoRemotoDTO {
     public void setExpira(Instant expira) {
         this.expira = expira;
     }
-
 
     @Override
     public String toString() {
