@@ -1,49 +1,16 @@
 package ar.edu.um.backend.service.dto;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
+import lombok.*;
 import java.io.Serializable;
+import java.util.List;
 /**
- * DTO para solicitar el bloqueo de un asiento desde el backend del alumno.
+ * Request para bloquear uno o más asientos de un evento (Payload 6).
  *
- * Se usa en:
- *   POST /api/eventos/{id}/bloqueos
- *
- * Este DTO representa el request recibido desde el frontend/Postman.
- * Luego, el backend traduce esta solicitud y la envía al proxy,
- * que es el encargado de comunicarse con el servidor de la cátedra.
+ * Se envía desde el backend al proxy/cátedra.
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class AsientoBloqueoRequestDTO implements Serializable {
-
-    @NotNull
-    @Min(1)
-    private Integer fila;
-
-    @NotNull
-    @Min(1)
-    private Integer columna;
-
-    public Integer getFila() {
-        return fila;
-    }
-
-    public void setFila(Integer fila) {
-        this.fila = fila;
-    }
-
-    public Integer getColumna() {
-        return columna;
-    }
-
-    public void setColumna(Integer columna) {
-        this.columna = columna;
-    }
-
-    @Override
-    public String toString() {
-        return "AsientoBloqueoRequestDTO{" +
-            "fila=" + fila +
-            ", columna=" + columna +
-            '}';
-    }
+    private Long eventoId; // externalId
+    private List<AsientoUbicacionDTO> asientos;
 }
-

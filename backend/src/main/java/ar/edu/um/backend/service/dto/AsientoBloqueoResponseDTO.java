@@ -1,59 +1,20 @@
 package ar.edu.um.backend.service.dto;
+import lombok.*;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.List;
 /**
- * DTO devuelto al bloquear un asiento.
+ * Respuesta del bloqueo de asientos (Payload 6).
  *
- * Contiene la información mínima para el frontend:
- *  - fila / columna del asiento,
- *  - estado final del asiento después del bloqueo,
- *  - fecha/hora exacta en la que expira el bloqueo (ahora + 5 minutos).
+ * Indica si el bloqueo fue exitoso y el estado final
+ * de cada asiento solicitado.
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class AsientoBloqueoResponseDTO implements Serializable {
-    private Integer fila;
-    private Integer columna;
-    private String estado; // LIBRE / BLOQUEADO / VENDIDO / etc.
-    private LocalDateTime expiraA; // ahora + 5 minutos
 
-    public Integer getFila() {
-        return fila;
-    }
-
-    public void setFila(Integer fila) {
-        this.fila = fila;
-    }
-
-    public Integer getColumna() {
-        return columna;
-    }
-
-    public void setColumna(Integer columna) {
-        this.columna = columna;
-    }
-
-    public String getEstado() {
-        return estado;
-    }
-
-    public void setEstado(String estado) {
-        this.estado = estado;
-    }
-
-    public LocalDateTime getExpiraA() {
-        return expiraA;
-    }
-
-    public void setExpiraA(LocalDateTime expiraA) {
-        this.expiraA = expiraA;
-    }
-
-    @Override
-    public String toString() {
-        return "AsientoBloqueoResponseDTO{" +
-            "fila=" + fila +
-            ", columna=" + columna +
-            ", estado='" + estado + '\'' +
-            ", expiraA=" + expiraA +
-            '}';
-    }
+    private Long eventoId;
+    private boolean resultado;
+    private String descripcion;
+    private List<AsientoEstadoDTO> asientos;
 }

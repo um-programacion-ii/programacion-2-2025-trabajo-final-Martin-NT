@@ -1,12 +1,11 @@
 package ar.edu.um.backend.web.rest;
 import ar.edu.um.backend.repository.EventoRepository;
+import ar.edu.um.backend.security.AuthoritiesConstants;
 import ar.edu.um.backend.service.AsientoBloqueoService;
 import ar.edu.um.backend.service.AsientoEstadoService;
 import ar.edu.um.backend.service.EventoService;
-import ar.edu.um.backend.service.dto.AsientoBloqueoRequestDTO;
-import ar.edu.um.backend.service.dto.AsientoBloqueoResponseDTO;
-import ar.edu.um.backend.service.dto.AsientoEstadoDTO;
-import ar.edu.um.backend.service.dto.EventoDTO;
+import ar.edu.um.backend.service.EventoSyncService;
+import ar.edu.um.backend.service.dto.*;
 import ar.edu.um.backend.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -21,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import tech.jhipster.web.util.HeaderUtil;
@@ -30,8 +30,12 @@ import tech.jhipster.web.util.ResponseUtil;
  * REST controller for managing {@link ar.edu.um.backend.domain.Evento}.
  *
  * Además de los endpoints CRUD generados por JHipster, expone:
- *   - GET /api/eventos/{id}/asientos → mapa de asientos en tiempo real
- *     combinando DB + Redis (via AsientoEstadoService).
+ *  - GET  /api/eventos/{id}/asientos  → estado de asientos en tiempo real
+ *    (DB local + Redis vía proxy).
+ *  - POST /api/eventos/{id}/bloqueos → bloqueo de asientos (Payload 6).
+ *
+ * También administra la sincronización manual de eventos entre:
+ *   Backend ←→ Proxy-Service ←→ Servidor de la cátedra.
  */
 @RestController
 @RequestMapping("/api/eventos")
@@ -48,13 +52,14 @@ public class EventoResource {
     private final EventoRepository eventoRepository;
     private final AsientoEstadoService asientoEstadoService;
     private final AsientoBloqueoService asientoBloqueoService;
+    private final EventoSyncService eventoSyncService;
 
-
-    public EventoResource(EventoService eventoService, EventoRepository eventoRepository, AsientoEstadoService asientoEstadoService, AsientoBloqueoService asientoBloqueoService) {
+    public EventoResource(EventoService eventoService, EventoRepository eventoRepository, AsientoEstadoService asientoEstadoService, AsientoBloqueoService asientoBloqueoService, EventoSyncService eventoSyncService) {
         this.eventoService = eventoService;
         this.eventoRepository = eventoRepository;
         this.asientoEstadoService = asientoEstadoService;
         this.asientoBloqueoService = asientoBloqueoService;
+        this.eventoSyncService = eventoSyncService;
     }
 
     /**
@@ -205,35 +210,77 @@ public class EventoResource {
     /**
      * POST /api/eventos/{id}/bloqueos
      *
-     * Crea un bloqueo de asiento para un evento local.
+     * Solicita el bloqueo de uno o más asientos para un evento local.
      *
-     * Body:
+     * El bloqueo es "todo o nada":
+     * - Si todos los asientos pueden bloquearse → resultado=true.
+     * - Si alguno está ocupado o bloqueado → resultado=false con detalle por asiento.
+     *
+     * Body (Payload 6):
      * {
-     *   "fila": 2,
-     *   "columna": 5
+     *   "eventoId": 1,
+     *   "asientos": [
+     *     { "fila": 2, "columna": 1 },
+     *     { "fila": 2, "columna": 2 }
+     *   ]
      * }
-     * Respuesta:
+     *
+     * Respuesta (ejemplo):
      * {
-     *   "fila": 2,
-     *   "columna": 5,
-     *   "estado": "BLOQUEADO",
-     *   "expiraA": "2025-12-15T10:30:00"
+     *   "resultado": false,
+     *   "descripcion": "No todos los asientos pueden ser bloqueados",
+     *   "eventoId": 1,
+     *   "asientos": [
+     *     { "fila": 2, "columna": 1, "estado": "Ocupado" },
+     *     { "fila": 2, "columna": 2, "estado": "Bloqueado" }
+     *   ]
      * }
      */
     @PostMapping("/{id}/bloqueos")
-    public ResponseEntity<AsientoBloqueoResponseDTO> bloquearAsiento(
+    public ResponseEntity<AsientoBloqueoResponseDTO> bloquearAsientos(
         @PathVariable("id") Long eventoIdLocal,
         @RequestBody AsientoBloqueoRequestDTO request
     ) {
         LOG.info("🔒 [Bloqueo] POST /api/eventos/{}/bloqueos body={}", eventoIdLocal, request);
 
         try {
-            AsientoBloqueoResponseDTO respuesta = asientoBloqueoService.bloquearAsiento(eventoIdLocal, request);
+            AsientoBloqueoResponseDTO respuesta =
+                asientoBloqueoService.bloquearAsientos(eventoIdLocal, request);
+
             return ResponseEntity.ok(respuesta);
+
         } catch (IllegalStateException e) {
-            LOG.warn("⚠️  [Bloqueo] Error de negocio al bloquear asiento para eventoIdLocal={}: {}", eventoIdLocal, e.getMessage());
-            // 400 con el mensaje de negocio
+            LOG.warn(
+                "⚠️ [Bloqueo] Error de negocio para eventoIdLocal={}: {}",
+                eventoIdLocal,
+                e.getMessage()
+            );
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
+    }
+
+
+    /**
+     * POST /api/eventos/sync-eventos
+     * ---------------------------------------------------------
+     * Este endpoint:
+     *   - Dispara una sincronización manual de eventos.
+     *   - Llama internamente a EventoSyncService.sincronizarEventosDesdeProxy().
+     *   - Reemplaza datos locales con los datos reales obtenidos desde la cátedra.
+     *
+     * Respuesta:
+     *   204 No Content → Se ejecutó correctamente pero no devuelve body.
+     */
+    @PostMapping("/sync-eventos")
+    public ResponseEntity<Void> syncEventosManualmente() {
+
+        LOG.info("[Admin-Sync] Solicitud manual de sincronización de eventos.");
+
+        // Ejecuta la sincronización real (acceso al proxy + persistencia local)
+        eventoSyncService.sincronizarEventosDesdeProxy();
+
+        LOG.info("[Admin-Sync] Sincronización manual finalizada.");
+
+        return ResponseEntity.noContent().build(); // HTTP 204
     }
 }

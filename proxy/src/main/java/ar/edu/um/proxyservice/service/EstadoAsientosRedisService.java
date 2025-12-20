@@ -5,15 +5,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
-
 import java.time.Instant;
 import java.util.Collections;
 import org.springframework.data.redis.connection.DataType;
-import ar.edu.um.proxyservice.service.dto.AsientoRemotoDTO;
+import ar.edu.um.proxyservice.service.dto.AsientoRequestDTO;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.*;
+
 /**
  * Servicio encargado de leer desde el Redis REMOTO de la cátedra el estado actual de los asientos de un evento.
  *
@@ -185,7 +184,7 @@ public class EstadoAsientosRedisService {
             return dtoVacio(eventoId);
         }
 
-        List<AsientoRemotoDTO> asientos = new ArrayList<>();
+        List<AsientoRequestDTO> asientos = new ArrayList<>();
 
         for (Map.Entry<Object, Object> entry : entries.entrySet()) {
             if (!(entry.getValue() instanceof String jsonSeat)) {
@@ -203,7 +202,7 @@ public class EstadoAsientosRedisService {
                     continue;
                 }
 
-                AsientoRemotoDTO dto = new AsientoRemotoDTO();
+                AsientoRequestDTO dto = new AsientoRequestDTO();
                 dto.setFila(fc.fila());
                 dto.setColumna(fc.columna());
                 dto.setExpira(seat.getExpira());
