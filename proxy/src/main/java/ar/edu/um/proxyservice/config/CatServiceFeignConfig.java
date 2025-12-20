@@ -24,7 +24,7 @@ public class CatServiceFeignConfig {
     public RequestInterceptor catedraAuthRequestInterceptor() {
         return (RequestTemplate template) -> {
             if (catedraJwtToken == null || catedraJwtToken.isBlank()) {
-                log.warn("[CatServiceFeignConfig] catedra.jwt-token está vacío. Se llamará sin Authorization.");
+                log.debug("[CatServiceFeignConfig] catedra.jwt-token está vacío. Se llamará sin Authorization.");
                 return;
             }
 
@@ -38,6 +38,6 @@ public class CatServiceFeignConfig {
     @Bean
     public feign.Logger.Level feignLoggerLevel() {
         // FULL → loguea request y response completos
-        return feign.Logger.Level.FULL;
+        return feign.Logger.Level.BASIC;
     }
 }
