@@ -116,7 +116,7 @@ public class ProxyEventosResource {
             @PathVariable Long id,
             @RequestBody BloquearAsientosRequestDTO request
     ) {
-        log.info("🔒 [Proxy] POST /api/proxy/eventos/{}/bloqueos", id);
+        log.info("🌐 [Proxy] POST /api/proxy/eventos/{}/bloqueos", id);
 
         // Validación básica
         if (request == null || request.getAsientos() == null || request.getAsientos().isEmpty()) {
@@ -147,8 +147,8 @@ public class ProxyEventosResource {
             @PathVariable Long id,
             @RequestBody Map<String, Object> ventaJson
     ) {
-        log.info("💸 [Proxy] POST /api/proxy/eventos/{}/venta", id);
-        log.debug("💸 [Proxy] Payload venta recibido: {}", ventaJson);
+        log.info("🌐 [Proxy] POST /api/proxy/eventos/{}/venta", id);
+        log.debug("🌐 [Proxy] Payload venta recibido: {}", ventaJson);
 
         try {
             // reenviamos tal cual
@@ -165,7 +165,7 @@ public class ProxyEventosResource {
             return ResponseEntity.ok().build();
 
         } catch (Exception e) {
-            log.error("💸 [Proxy] Error al crear venta en la cátedra para evento {}", id, e);
+            log.error("🌐 [Proxy] Error al crear venta en la cátedra para evento {}", id, e);
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"error\":\"No se pudo crear la venta en la cátedra\"}");

@@ -3,8 +3,15 @@ package ar.edu.um.backend.service.impl;
 import ar.edu.um.backend.domain.Evento;
 import ar.edu.um.backend.repository.EventoRepository;
 import ar.edu.um.backend.service.EventoService;
+import ar.edu.um.backend.service.ProxyService;
 import ar.edu.um.backend.service.dto.EventoDTO;
+import ar.edu.um.backend.service.dto.ProxyEventoDetalleDTO;
+import ar.edu.um.backend.service.dto.ProxyEventoResumenDTO;
+import ar.edu.um.backend.service.dto.ProxyTipoEventoDTO;
 import ar.edu.um.backend.service.mapper.EventoMapper;
+
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -28,10 +35,12 @@ public class EventoServiceImpl implements EventoService {
     private final EventoRepository eventoRepository;
 
     private final EventoMapper eventoMapper;
+    private final ProxyService proxyService;
 
-    public EventoServiceImpl(EventoRepository eventoRepository, EventoMapper eventoMapper) {
+    public EventoServiceImpl(EventoRepository eventoRepository, EventoMapper eventoMapper, ProxyService proxyService) {
         this.eventoRepository = eventoRepository;
         this.eventoMapper = eventoMapper;
+        this.proxyService = proxyService;
     }
 
     @Override
@@ -101,6 +110,27 @@ public class EventoServiceImpl implements EventoService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<ProxyEventoDetalleDTO> findAllCompletos() {
+        LOG.debug("Solicitud para obtener todos los Eventos Completos");
+        return proxyService.listarEventosCompletos();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProxyEventoResumenDTO> findAllResumidos() {
+        LOG.debug("Solicitud para obtener todos los Eventos Resumidos");
+        return proxyService.listarEventosResumidos();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProxyEventoDetalleDTO findOneById(Long id) {
+        LOG.debug("Solicitud para obtener Evento por ID : {}", id);
+        return proxyService.obtenerEventoPorId(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<EventoDTO> findOne(Long id) {
         LOG.debug("Solicitud para obtener Evento ACTIVO : {}", id);
         return eventoRepository.findByIdAndActivoTrue(id).map(eventoMapper::toDto);
@@ -133,7 +163,6 @@ public class EventoServiceImpl implements EventoService {
             .map(eventoMapper::toDto)
             .collect(Collectors.toCollection(LinkedList::new));
     }
-
 
     // Metodo que valida que filaAsientos y columnaAsientos sean ≠ null & > 0
     // y recalcula cantidadAsientosTotales = filaAsientos × columnaAsientos

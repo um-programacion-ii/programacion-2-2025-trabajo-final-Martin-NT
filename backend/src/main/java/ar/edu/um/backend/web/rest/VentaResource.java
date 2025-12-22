@@ -160,6 +160,7 @@ public class VentaResource {
             .build();
     }
 
+
     /**
      * POST /api/ventas/eventos/{eventoId}/venta :
      * Crea una venta real para un evento, validando bloqueos en Redis

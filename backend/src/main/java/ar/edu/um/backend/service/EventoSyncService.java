@@ -24,9 +24,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Transactional
 public class EventoSyncService {
-
     private static final Logger log = LoggerFactory.getLogger(EventoSyncService.class);
-
     private final ProxyService proxyService;
     private final EventoRepository eventoRepository;
     private final AsientoSyncService asientoSyncService;
@@ -57,14 +55,14 @@ public class EventoSyncService {
 
         Set<Long> externalIdsVigentes = new HashSet<>();
 
-        // Usamos UTC porque la cátedra manda timestamps con "Z"
+        // UTC porque la cátedra manda timestamps con "Z"
         ZoneId zone = ZoneOffset.UTC;
 
         // 2) Procesar evento por evento
         for (ProxyEventoDetalleDTO remoto : remotos) {
 
-            if (remoto.getId() == null) {
-                log.warn("⚠️ [Sync-Eventos] Evento remoto ignorado (sin ID). Título={}", remoto.getTitulo());
+            if (remoto == null || remoto.getId() == null) {
+                log.warn("⚠️ [Sync-Eventos] Evento remoto ignorado (null o sin ID).");
                 continue;
             }
 
@@ -94,24 +92,23 @@ public class EventoSyncService {
             // Fecha/Hora (Instant -> LocalDate + LocalTime)
             Instant fechaInst = remoto.getFecha();
             if (fechaInst == null) {
-                // fallback si viniera mal (no debería)
                 LocalDate hoy = LocalDate.now(zone);
                 local.setFecha(hoy);
                 local.setHora(LocalTime.MIDNIGHT);
-                log.warn("⚠️ Evento {} sin fecha (Instant). Se asigna fecha actual y 00:00 UTC.", remoto.getId());
+                log.warn("⚠️ [Sync-Eventos] Evento externalId={} sin fecha(Instant). Se asigna fecha actual y 00:00 UTC.", remoto.getId());
             } else {
                 LocalDateTime ldt = LocalDateTime.ofInstant(fechaInst, zone);
                 local.setFecha(ldt.toLocalDate());
                 local.setHora(ldt.toLocalTime());
             }
 
-            // Asientos
+            // Asientos (grilla)
             Integer filas = remoto.getFilaAsientos();
             Integer columnas = remoto.getColumnaAsientos();
 
             if (filas == null || columnas == null || filas <= 0 || columnas <= 0) {
                 log.error(
-                    "❌ Evento {} con configuración inválida de asientos (filas={}, columnas={}).",
+                    "❌ [Sync-Eventos] Evento externalId={} con configuración inválida de asientos (filas={}, columnas={}). Se omite.",
                     remoto.getId(), filas, columnas
                 );
                 continue;
@@ -125,28 +122,23 @@ public class EventoSyncService {
             BigDecimal precio = remoto.getPrecioEntrada();
             if (precio == null) {
                 precio = BigDecimal.ZERO;
-                log.warn("⚠️ Evento {} sin precioEntrada. Se asigna 0.", remoto.getId());
+                log.warn("⚠️ [Sync-Eventos] Evento externalId={} sin precioEntrada. Se asigna 0.", remoto.getId());
             } else if (precio.compareTo(BigDecimal.ZERO) < 0) {
-                log.error("❌ Evento {} con precioEntrada negativo ({}). Ignorado.", remoto.getId(), precio);
+                log.error("❌ [Sync-Eventos] Evento externalId={} con precioEntrada negativo ({}). Se omite.", remoto.getId(), precio);
                 continue;
             }
             local.setPrecioEntrada(precio);
 
-            // Datos generales (lo que tu entidad local realmente usa)
+            // Datos generales
             local.setTitulo(remoto.getTitulo());
             local.setDescripcion(remoto.getDescripcion());
-
-            // OJO: organizador/presentadores no vienen en payloads 3/4/5.
-            // Si tu entidad los requiere en otro lado, lo tratamos aparte.
-            // local.setOrganizador(null);
-            // local.setPresentadores(null);
 
             Evento guardado = eventoRepository.save(local);
 
             log.info(
                 "💾 [DB] Evento guardado → idLocal={}, externalId={}, titulo={}",
                 guardado.getId(),
-                remoto.getId(),
+                guardado.getExternalId(),
                 guardado.getTitulo()
             );
 

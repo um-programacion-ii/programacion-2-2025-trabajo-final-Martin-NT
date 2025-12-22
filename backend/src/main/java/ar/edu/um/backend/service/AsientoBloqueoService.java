@@ -1,10 +1,12 @@
 package ar.edu.um.backend.service;
+
 import ar.edu.um.backend.domain.Evento;
 import ar.edu.um.backend.repository.EventoRepository;
 import ar.edu.um.backend.service.dto.AsientoBloqueoRequestDTO;
 import ar.edu.um.backend.service.dto.AsientoBloqueoResponseDTO;
 import ar.edu.um.backend.service.dto.AsientoEstadoDTO;
 import ar.edu.um.backend.service.dto.AsientoUbicacionDTO;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -25,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * Importante:
  * - El proxy/cátedra es la fuente de verdad del bloqueo.
- * - El TTL del bloqueo NO se maneja aquí.
+ * - El TTL del bloqueo NO se maneja aquí (viene dado por la cátedra/Redis).
  * - La operación es atómica ("todo o nada").
  */
 @Service
@@ -59,9 +61,7 @@ public class AsientoBloqueoService {
 
         // 1) Obtener evento local
         Evento evento = eventoRepository.findById(eventoIdLocal)
-            .orElseThrow(() ->
-                new IllegalStateException("Evento no encontrado idLocal=" + eventoIdLocal)
-            );
+            .orElseThrow(() -> new IllegalStateException("Evento no encontrado idLocal=" + eventoIdLocal));
 
         // 2) Validaciones del evento
         if (Boolean.FALSE.equals(evento.getActivo())) {
@@ -99,29 +99,41 @@ public class AsientoBloqueoService {
             }
         }
 
-        // 4) Pre-chequeo de estados locales/remotos
+        // 4) Pre-chequeo de estados (tu "mapa final" backend)
         List<AsientoEstadoDTO> detalle = new ArrayList<>();
         boolean todosBloqueables = true;
 
         for (AsientoUbicacionDTO a : request.getAsientos()) {
 
-            AsientoEstadoDTO estado =
+            AsientoEstadoDTO estadoActual =
                 asientoEstadoService.obtenerEstadoAsiento(eventoIdLocal, a.getFila(), a.getColumna());
 
-            String est = (estado != null && estado.getEstado() != null)
-                ? estado.getEstado()
+            String est = (estadoActual != null && estadoActual.getEstado() != null)
+                ? estadoActual.getEstado()
                 : "DESCONOCIDO";
 
+            Instant expira = (estadoActual != null) ? estadoActual.getExpira() : null;
+
+            // Si está vendido/ocupado -> no se puede bloquear
             if ("VENDIDO".equalsIgnoreCase(est) || "OCUPADO".equalsIgnoreCase(est)) {
                 todosBloqueables = false;
-                detalle.add(new AsientoEstadoDTO(a.getFila(), a.getColumna(), "Ocupado"));
-            } else if ("BLOQUEADO_VIGENTE".equalsIgnoreCase(est) || "BLOQUEADO".equalsIgnoreCase(est)) {
-                todosBloqueables = false;
-                detalle.add(new AsientoEstadoDTO(a.getFila(), a.getColumna(), "Bloqueado"));
+                // OJO: este detalle es para respuesta negativa, y debe incluir expira (aunque sea null)
+                detalle.add(new AsientoEstadoDTO(a.getFila(), a.getColumna(), "Ocupado", null));
+                continue;
             }
+
+            // Si ya está bloqueado (vigente) -> no se puede bloquear
+            if ("BLOQUEADO_VIGENTE".equalsIgnoreCase(est) || "BLOQUEADO".equalsIgnoreCase(est)) {
+                todosBloqueables = false;
+                // acá sí tiene sentido devolver expira si la tenés
+                detalle.add(new AsientoEstadoDTO(a.getFila(), a.getColumna(), "Bloqueado", expira));
+            }
+
+            // Nota: "BLOQUEADO_EXPIRADO" no debería impedir bloquear:
+            // si está expirado, el intento de bloqueo debería poder avanzar y que la cátedra decida.
         }
 
-        // 5) Si alguno no es bloqueable → respuesta negativa
+        // 5) Si alguno no es bloqueable → respuesta negativa (todo o nada)
         if (!todosBloqueables) {
             AsientoBloqueoResponseDTO resp = new AsientoBloqueoResponseDTO();
             resp.setResultado(false);
@@ -129,7 +141,7 @@ public class AsientoBloqueoService {
             resp.setEventoId(evento.getExternalId());
             resp.setAsientos(detalle);
 
-            log.warn("⛔ [Bloqueo] Rechazado por pre-chequeo local (eventoLocal={})", eventoIdLocal);
+            log.warn("⛔ [Bloqueo] Rechazado por pre-chequeo (eventoLocal={}, externalId={})", eventoIdLocal, evento.getExternalId());
             return resp;
         }
 
@@ -139,6 +151,17 @@ public class AsientoBloqueoService {
         requestCat.setAsientos(request.getAsientos());
 
         AsientoBloqueoResponseDTO resp = proxyService.crearBloqueoEnProxy(requestCat);
+
+        // FIX: si el proxy falló y devolvió null, evitamos NPE y devolvemos un resultado controlado
+        if (resp == null) {
+            log.error("❌ [Bloqueo] El proxy devolvió null al bloquear (eventoLocal={}, externalId={})", eventoIdLocal, evento.getExternalId());
+            AsientoBloqueoResponseDTO fallback = new AsientoBloqueoResponseDTO();
+            fallback.setResultado(false);
+            fallback.setDescripcion("Error comunicándose con el proxy para bloquear asientos");
+            fallback.setEventoId(evento.getExternalId());
+            fallback.setAsientos(new ArrayList<>());
+            return fallback;
+        }
 
         log.info(
             "✅ [Bloqueo] Respuesta proxy: resultado={}, eventoId={}",

@@ -1,5 +1,4 @@
 package ar.edu.um.backend.service;
-
 import ar.edu.um.backend.service.dto.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,10 +40,7 @@ public class ProxyService {
        EVENTOS
        ============================================================ */
 
-    /**
-     * GET /api/proxy/eventos
-     * Debe mapear a Payload 4 (eventos completos).
-     */
+    /** GET /api/proxy/eventos  (Payload 4 completos) */
     public List<ProxyEventoDetalleDTO> listarEventosCompletos() {
         try {
             return proxyWebClient
@@ -63,10 +59,7 @@ public class ProxyService {
         }
     }
 
-    /**
-     * GET /api/proxy/eventos-resumidos
-     * Debe mapear a Payload 3 (eventos resumidos).
-     */
+    /** GET /api/proxy/eventos-resumidos (Payload 3 resumidos) */
     public List<ProxyEventoResumenDTO> listarEventosResumidos() {
         try {
             return proxyWebClient
@@ -85,13 +78,12 @@ public class ProxyService {
         }
     }
 
-    /**
-     * GET /api/proxy/eventos/{id}
-     * Debe mapear a Payload 5 (evento completo por id).
-     *
-     * Importante: NO devuelve EventoDTO (local). Devuelve DTO remoto.
-     */
+    /** GET /api/proxy/eventos/{id} (Payload 5 detalle) */
     public ProxyEventoDetalleDTO obtenerEventoPorId(Long externalId) {
+        if (externalId == null) {
+            log.warn("⚠️ [Proxy-Backend] obtenerEventoPorId llamado con externalId=null");
+            return null;
+        }
         try {
             return proxyWebClient
                 .get()
@@ -100,7 +92,12 @@ public class ProxyService {
                 .bodyToMono(ProxyEventoDetalleDTO.class)
                 .block();
         } catch (WebClientResponseException e) {
-            log.error("❌ [Proxy-Backend] Error obteniendo evento detalle externalId={} -> {}", externalId, e.getResponseBodyAsString(), e);
+            log.error(
+                "❌ [Proxy-Backend] Error obteniendo evento detalle externalId={} -> {}",
+                externalId,
+                e.getResponseBodyAsString(),
+                e
+            );
             return null;
         } catch (Exception e) {
             log.error("💥 [Proxy-Backend] Error inesperado obteniendo evento detalle externalId={}", externalId, e);
@@ -109,92 +106,70 @@ public class ProxyService {
     }
 
     /* ============================================================
-       ESTADO DE ASIENTOS (REDIS)
+       ESTADO DE ASIENTOS (REDIS) / ASIENTOS
        ============================================================ */
 
-    /**
-     * GET /api/proxy/eventos/{id}/estado-asientos
-     *
-     * Idealmente el proxy debería devolver un wrapper:
-     *   { "eventoId": X, "asientos": [ ... ] }
-     *
-     * Como aún no confirmaste qué devuelve tu proxy, este método soporta:
-     * - wrapper (ProxyEstadoAsientosResponse)
-     * - lista directa ([ {fila, columna, estado, expira, ...}, ... ])
-     */
+    /** GET /api/proxy/eventos/{id}/estado-asientos  (Redis remoto) */
     public ProxyEstadoAsientosResponse listarEstadoAsientosRedis(Long externalId) {
-        try {
-            String json = proxyWebClient
-                .get()
-                .uri("/eventos/" + externalId + "/estado-asientos")
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-
-            if (json == null || json.isBlank()) {
-                return null;
-            }
-
-            // 1) Intento wrapper
-            try {
-                ProxyEstadoAsientosResponse wrapper = objectMapper.readValue(json, ProxyEstadoAsientosResponse.class);
-                // si vino sin eventoId, igual lo seteamos para consistencia
-                if (wrapper != null && wrapper.getEventoId() == null) {
-                    wrapper.setEventoId(externalId);
-                }
-                return wrapper;
-            } catch (Exception ignore) {
-                // 2) Intento lista directa y la “envuelvo”
-                List<AsientoRequestDTO> lista = objectMapper.readValue(json, new TypeReference<List<AsientoRequestDTO>>() {});
-                ProxyEstadoAsientosResponse wrapper = new ProxyEstadoAsientosResponse();
-                wrapper.setEventoId(externalId);
-                wrapper.setAsientos(lista);
-                return wrapper;
-            }
-
-        } catch (WebClientResponseException e) {
-            log.error("❌ [Proxy-Backend] Error obteniendo estado-asientos externalId={} -> {}", externalId, e.getResponseBodyAsString(), e);
-            return null;
-        } catch (Exception e) {
-            log.error("💥 [Proxy-Backend] Error inesperado obteniendo estado-asientos externalId={}", externalId, e);
+        if (externalId == null) {
+            log.warn("⚠️ [Proxy-Backend] estado-asientos llamado con externalId=null");
             return null;
         }
+        return getAsientosWrapper("/eventos/" + externalId + "/estado-asientos", externalId, "estado-asientos");
     }
 
-    /* ============================================================
-       ASIENTOS DE EVENTO (CÁTEDRA / EVENTOS/{id}/ASIENTOS)
-       ============================================================ */
+    /** GET /api/proxy/eventos/{id}/asientos (asientos del evento desde cátedra/proxy) */
+    public ProxyEstadoAsientosResponse listarAsientosDeEvento(Long externalId) {
+        if (externalId == null) {
+            log.warn("⚠️ [Proxy-Backend] asientos llamado con externalId=null");
+            return null;
+        }
+        return getAsientosWrapper("/eventos/" + externalId + "/asientos", externalId, "asientos");
+    }
 
     /**
-     * GET /api/proxy/eventos/{id}/asientos
-     *
-     * Devuelve los asientos del evento desde la cátedra (vía proxy).
-     *
-     * Soporta 2 formatos (por si el proxy cambia):
-     *  - wrapper: { "eventoId": X, "asientos": [ ... ] }
-     *  - lista directa: [ {fila, columna, estado, expira, personaActual, ...}, ... ]
+     * Helper común: llama a endpoint que puede devolver:
+     * - wrapper: { "eventoId": X, "asientos": [ ... ] }
+     * - lista directa: [ {fila, columna, estado, expira, personaActual, ...}, ... ]
      */
-    public ProxyEstadoAsientosResponse listarAsientosDeEvento(Long externalId) {
+    private ProxyEstadoAsientosResponse getAsientosWrapper(String uri, Long externalId, String tag) {
+        // Nota: externalId ya viene validado por los métodos públicos, pero lo dejamos por seguridad.
+        if (externalId == null) {
+            log.warn("⚠️ [Proxy-Backend] {} llamado con externalId=null (uri={})", tag, uri);
+            return null;
+        }
+
         try {
             String json = proxyWebClient
                 .get()
-                .uri("/eventos/" + externalId + "/asientos")
+                .uri(uri)
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
 
             if (json == null || json.isBlank()) {
+                log.warn("⚠️ [Proxy-Backend] {} devolvió body vacío externalId={}", tag, externalId);
                 return null;
             }
 
             // 1) Intento wrapper
             try {
                 ProxyEstadoAsientosResponse wrapper = objectMapper.readValue(json, ProxyEstadoAsientosResponse.class);
-                if (wrapper != null && wrapper.getEventoId() == null) {
-                    wrapper.setEventoId(externalId);
+
+                if (wrapper != null) {
+                    if (wrapper.getEventoId() == null) {
+                        wrapper.setEventoId(externalId);
+                    }
+                    // Normalizamos asientos null -> lista vacía (evita NPEs aguas abajo)
+                    if (wrapper.getAsientos() == null) {
+                        wrapper.setAsientos(Collections.emptyList());
+                    }
                 }
+
+                log.debug("✅ [Proxy-Backend] {} parseado como WRAPPER (externalId={})", tag, externalId);
                 return wrapper;
-            } catch (Exception ignore) {
+
+            } catch (Exception ignoreWrapper) {
                 // 2) Intento lista directa y la “envuelvo”
                 List<AsientoRequestDTO> lista = objectMapper.readValue(
                     json,
@@ -203,36 +178,32 @@ public class ProxyService {
 
                 ProxyEstadoAsientosResponse wrapper = new ProxyEstadoAsientosResponse();
                 wrapper.setEventoId(externalId);
-                wrapper.setAsientos(lista);
+                wrapper.setAsientos(lista != null ? lista : Collections.emptyList());
+
+                log.debug("✅ [Proxy-Backend] {} parseado como LISTA y envuelto (externalId={})", tag, externalId);
                 return wrapper;
             }
 
         } catch (WebClientResponseException e) {
-            log.error(
-                "❌ [Proxy-Backend] Error obteniendo asientos externalId={} -> {}",
-                externalId,
-                e.getResponseBodyAsString(),
-                e
-            );
+            log.error("❌ [Proxy-Backend] Error HTTP {} externalId={} -> {}", tag, externalId, e.getResponseBodyAsString(), e);
             return null;
         } catch (Exception e) {
-            log.error("💥 [Proxy-Backend] Error inesperado obteniendo asientos externalId={}", externalId, e);
+            log.error("💥 [Proxy-Backend] Error inesperado {} externalId={}", tag, externalId, e);
             return null;
         }
     }
-
 
     /* ============================================================
        BLOQUEO DE ASIENTOS
        ============================================================ */
 
-    /**
-     * POST /api/proxy/eventos/{externalId}/bloqueos
-     *
-     * Ejecuta el bloqueo real de asientos en la cátedra (Redis remoto).
-     * La cátedra decide si el bloqueo es exitoso o no.
-     */
+    /** POST /api/proxy/eventos/{externalId}/bloqueos (bloqueo real en Redis cátedra) */
     public AsientoBloqueoResponseDTO crearBloqueoEnProxy(AsientoBloqueoRequestDTO dto) {
+        if (dto == null || dto.getEventoId() == null) {
+            log.warn("⚠️ [Proxy-Backend] crearBloqueoEnProxy llamado con dto/eventoId nulo");
+            return null;
+        }
+
         try {
             log.info(
                 "🔒 [Proxy-Backend] Enviando bloqueo al proxy: eventoId={}, asientos={}",
@@ -249,12 +220,7 @@ public class ProxyService {
                 .block();
 
         } catch (WebClientResponseException e) {
-            log.error(
-                "❌ [Proxy-Backend] Error HTTP bloqueando asientos (eventoId={}) -> {}",
-                dto.getEventoId(),
-                e.getResponseBodyAsString(),
-                e
-            );
+            log.error("❌ [Proxy-Backend] Error HTTP bloqueando asientos (eventoId={}) -> {}", dto.getEventoId(), e.getResponseBodyAsString(), e);
             return null;
         } catch (Exception e) {
             log.error("💥 [Proxy-Backend] Error inesperado bloqueando asientos (eventoId={})", dto.getEventoId(), e);
@@ -266,13 +232,13 @@ public class ProxyService {
        VENTAS
        ============================================================ */
 
-    /**
-     * POST /api/proxy/eventos/{externalId}/venta
-     *
-     * Request (Payload 7 entrada): ProxyVentaRequestDTO
-     * Response (Payload 7 salida): ProxyVentaResponseDTO
-     */
+    /** POST /api/proxy/eventos/{externalId}/venta */
     public ProxyVentaResponseDTO crearVentaEnProxy(Long externalId, ProxyVentaRequestDTO ventaRequest) {
+        if (externalId == null) {
+            log.warn("⚠️ [Proxy-Backend] crearVentaEnProxy llamado con externalId=null");
+            return null;
+        }
+
         try {
             log.info(
                 "💸 [Proxy-Backend] Enviando venta al proxy: externalId={}, asientos={}",
@@ -289,12 +255,7 @@ public class ProxyService {
                 .block();
 
         } catch (WebClientResponseException e) {
-            log.error(
-                "❌ [Proxy-Backend] Error creando venta en proxy (externalId={}) -> {}",
-                externalId,
-                e.getResponseBodyAsString(),
-                e
-            );
+            log.error("❌ [Proxy-Backend] Error creando venta en proxy (externalId={}) -> {}", externalId, e.getResponseBodyAsString(), e);
             return null;
         } catch (Exception e) {
             log.error("💥 [Proxy-Backend] Error inesperado creando venta en proxy (externalId={})", externalId, e);

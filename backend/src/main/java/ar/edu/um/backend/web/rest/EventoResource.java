@@ -161,20 +161,6 @@ public class EventoResource {
         return eventoService.findAll();
     }
 
-
-    /**
-     * {@code GET  /eventos/:id} : get the "id" evento.
-     *
-     * @param id the id of the eventoDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the eventoDTO, or with status {@code 404 (Not Found)}.
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<EventoDTO> getEvento(@PathVariable("id") Long id) {
-        LOG.debug("REST request to get Active Evento : {}", id);
-        Optional<EventoDTO> eventoDTO = eventoService.findOne(id);
-        return ResponseUtil.wrapOrNotFound(eventoDTO);
-    }
-
     /**
      * {@code DELETE  /eventos/:id} : delete the "id" evento.
      *
@@ -190,13 +176,58 @@ public class EventoResource {
             .build();
     }
 
+    /**
+     * {@code GET  /eventos/completos} : get all the eventos con información completa.
+     *
+     * @return
+     */
+    @GetMapping("/completos")
+    public List<ProxyEventoDetalleDTO> getAllEventosCompletos() {
+        LOG.info("[EventoResource] GET /api/eventos/completos (devolviendo solo eventos completos)");
+        return eventoService.findAllCompletos();
+    }
 
+    /**
+     * {@code GET  /eventos/resumidos} : get all the eventos con información resumida.
+     *
+     * @return
+     */
+    @GetMapping("/resumidos")
+    public List<ProxyEventoResumenDTO> getAllEventosResumidos() {
+        LOG.info("[EventoResource] GET /api/eventos/resumidos (devolviendo solo eventos resumiidos)");
+        return eventoService.findAllResumidos();
+    }
+
+    /**
+     * {@code GET  /eventos/eventos}/id} : get the "id" evento.
+     *
+     * @return
+     */
+    @GetMapping("/{id}")
+    public ProxyEventoDetalleDTO getEventoId(@PathVariable("id") Long id) {
+        LOG.info("[EventoResource] GET /api/eventos/{}", id);
+        return eventoService.findOneById(id);
+    }
+
+
+    /**
+     * {@code GET  /eventos/:id} : get the "id" evento.
+     *
+     * @param id the id of the eventoDTO to retrieve.
+     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the eventoDTO, or with status {@code 404 (Not Found)}.
+     */
+    @GetMapping("/locales/{id}")
+    public ResponseEntity<EventoDTO> getEventoLocal(@PathVariable("id") Long id) {
+        LOG.debug("REST request to get Active Evento : {}", id);
+        Optional<EventoDTO> eventoDTO = eventoService.findOne(id);
+        return ResponseUtil.wrapOrNotFound(eventoDTO);
+    }
 
     /**
      * GET  /api/eventos/{id}/asientos
      *
-     * Devuelve el mapa de asientos del evento en tiempo real,
-     * combinando estado persistido (DB) + Redis (bloqueos vigentes/expirados).
+     * Devuelve el mapa de asientos del evento en tiempo real, (estado-asientos-tiempo-real)
+     * usando Redis como fuente de verdad y completando LIBRES por diferencia.
      */
     @GetMapping("/{id}/asientos")
     public ResponseEntity<List<AsientoEstadoDTO>> obtenerEstadoActualAsientos(@PathVariable Long id) {
