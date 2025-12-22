@@ -1,6 +1,9 @@
 package ar.edu.um.backend.service;
 
 import ar.edu.um.backend.service.dto.EventoDTO;
+import ar.edu.um.backend.service.dto.ProxyEventoDetalleDTO;
+import ar.edu.um.backend.service.dto.ProxyEventoResumenDTO;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -67,5 +70,11 @@ public interface EventoService {
      * @return the list of entities.
      */
     List<EventoDTO> findAllByOrderByTituloAsc();
+
+    List<ProxyEventoDetalleDTO> findAllCompletos();
+
+    List<ProxyEventoResumenDTO> findAllResumidos();
+
+    ProxyEventoDetalleDTO findOneById(Long id);
 }
 

@@ -1,15 +1,17 @@
 package ar.edu.um.backend.service;
-import ar.edu.um.backend.domain.Asiento;
 import ar.edu.um.backend.domain.Evento;
-import ar.edu.um.backend.domain.enumeration.AsientoEstado;
-import ar.edu.um.backend.repository.AsientoRepository;
 import ar.edu.um.backend.repository.EventoRepository;
 import ar.edu.um.backend.service.dto.AsientoEstadoDTO;
-import ar.edu.um.backend.service.dto.ProxyAsientoDTO;
+import ar.edu.um.backend.service.dto.AsientoRequestDTO;
 import ar.edu.um.backend.service.dto.ProxyEstadoAsientosResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -17,199 +19,245 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Servicio encargado de construir el estado actual de los asientos de un evento,
- * combinando:
+ * Servicio que construye el MAPA FINAL DE ASIENTOS para el frontend usando SOLO Redis (vía proxy).
  *
- * - El estado persistido en la base local (PostgreSQL, entidad Asiento).
- * - El estado en tiempo real de los bloqueos desde Redis (vía ProxyService).
+ * Regla:
+ * - Redis devuelve únicamente asientos NO libres (bloqueados/vendidos/ocupados) (ideal).
+ * - El backend completa los faltantes como LIBRE generando la grilla completa (filas x columnas).
  *
- * Resultado:
- *   Devuelve una lista de AsientoEstadoDTO para que el frontend tenga
- *   un mapa unificado: LIBRE / VENDIDO / BLOQUEADO_VIGENTE / BLOQUEADO_EXPIRADO.
+ * Estados devueltos al frontend:
+ * - LIBRE
+ * - VENDIDO
+ * - BLOQUEADO_VIGENTE
+ * - BLOQUEADO_EXPIRADO (si expira <= now)
  */
 @Service
 public class AsientoEstadoService {
-    private static final Logger log = LoggerFactory.getLogger(AsientoEstadoService.class);
-    private final EventoRepository eventoRepository;
-    private final AsientoRepository asientoRepository;
-    private final ProxyService proxyService;
-    private final ObjectMapper objectMapper;
 
-    public AsientoEstadoService(
-        EventoRepository eventoRepository,
-        AsientoRepository asientoRepository,
-        ProxyService proxyService,
-        ObjectMapper objectMapper
-    ) {
+    private static final Logger log = LoggerFactory.getLogger(AsientoEstadoService.class);
+
+    private final EventoRepository eventoRepository;
+    private final ProxyService proxyService;
+
+    public AsientoEstadoService(EventoRepository eventoRepository, ProxyService proxyService) {
         this.eventoRepository = eventoRepository;
-        this.asientoRepository = asientoRepository;
         this.proxyService = proxyService;
-        this.objectMapper = objectMapper;
     }
 
     /**
-     * Obtiene el mapa FINAL de asientos de un evento combinando:
-     * - Lo que hay en la base local (tabla asiento).
-     * - El estado actual de bloqueos desde Redis.
-     *
-     * Reglas principales:
-     *  - Si el asiento está VENDIDO en DB → tiene prioridad sobre Redis.
-     *  - Redis decide si un bloqueo está vigente o expirado (usando el campo expira).
-     *  - Coordenadas inválidas devueltas por Redis se ignoran pero se loguean.
-     *
-     * @param eventoId ID local del evento (en nuestra base).
-     * @return lista de AsientoEstadoDTO con el estado final de cada asiento.
+     * Devuelve el mapa completo de asientos del evento (grilla completa),
+     * usando Redis como fuente de verdad y completando LIBRES por diferencia.
      */
-    public List<AsientoEstadoDTO> obtenerEstadoActualDeAsientos(Long eventoId) {
-        // 1) Obtener el evento para conocer filas/columnas y el externalId
-        Evento evento = eventoRepository.findById(eventoId)
-            .orElseThrow(() ->
-                new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Evento no encontrado"
-                )
-            );
+    public List<AsientoEstadoDTO> obtenerEstadoActualDeAsientos(Long eventoIdLocal) {
 
-        // 2) Asientos desde la DB local (mapa base)
-        List<Asiento> asientosDB =
-            asientoRepository.findByEventoIdOrderByFilaAscColumnaAsc(eventoId);
+        Evento evento = eventoRepository
+            .findById(eventoIdLocal)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento no encontrado"));
 
-        // 3) Estado de asientos desde Redis vía proxy
-        String jsonRedis = proxyService.listarEstadoAsientosRedis(evento.getExternalId());
-        ProxyEstadoAsientosResponse redisResponse = parsearRedis(jsonRedis);
+        if (evento.getExternalId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El evento no tiene externalId (id cátedra)");
+        }
+        if (evento.getFilaAsientos() == null || evento.getColumnaAsientos() == null
+            || evento.getFilaAsientos() <= 0 || evento.getColumnaAsientos() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El evento no tiene filas/columnas válidas");
+        }
 
-        List<ProxyAsientoDTO> redisAsientos =
+        int maxFilas = evento.getFilaAsientos();
+        int maxCols = evento.getColumnaAsientos();
+        Long externalId = evento.getExternalId();
+        int totalEsperado = maxFilas * maxCols;
+
+        // 1) Leer Redis (solo no-libres)
+        ProxyEstadoAsientosResponse redisResponse = proxyService.listarEstadoAsientosRedis(externalId);
+        List<AsientoRequestDTO> redisAsientos =
             (redisResponse != null && redisResponse.getAsientos() != null)
                 ? redisResponse.getAsientos()
                 : Collections.emptyList();
 
-        // 4) Armar mapa rápido (fila-columna → asientoRedis)
-        Map<String, ProxyAsientoDTO> redisMap = new HashMap<>();
-        for (ProxyAsientoDTO a : redisAsientos) {
-            String key = a.getFila() + "-" + a.getColumna();
-            redisMap.put(key, a);
-        }
+        log.info(
+            "🧭 [Mapa-Asientos] Construyendo mapa eventoIdLocal={} externalId={} grilla={}x{} (total={}) | redisItems={}",
+            eventoIdLocal, externalId, maxFilas, maxCols, totalEsperado, redisAsientos.size()
+        );
 
-        // 5) Recorrer todos los asientos de la DB y decidir estado final
-        List<AsientoEstadoDTO> resultado = new ArrayList<>();
-        Instant ahora = Instant.now();
+        // 2) Indexar Redis (filtrando fuera de rango y opcionalmente ignorando LIBRE)
+        Map<String, AsientoRequestDTO> redisMap = new HashMap<>();
+        int ignoradosFueraDeRango = 0;
+        int ignoradosLibres = 0;
+        int ignoradosInvalidos = 0;
+        int duplicados = 0;
 
-        for (Asiento asientoDB : asientosDB) {
-
-            String key = asientoDB.getFila() + "-" + asientoDB.getColumna();
-            ProxyAsientoDTO redis = redisMap.get(key);
-
-            // ----------- VALIDACIONES DE REDIS ----------- //
-            if (redis != null) {
-
-                boolean invalido =
-                    // 1) Redis devolvió fila o columna sin valor (null) → JSON incompleto o corrupto
-                    redis.getFila() == null || redis.getColumna() == null ||
-
-                    // 2) La fila o columna es 0 o negativa → nunca puede existir un asiento así
-                    redis.getFila() <= 0 || redis.getColumna() <= 0 ||
-
-                    // 3) La fila supera la cantidad de filas declaradas por el evento → fuera del rango real del evento
-                    redis.getFila() > evento.getFilaAsientos() ||
-
-                    // 4) La columna supera la cantidad de columnas del evento → también fuera del rango
-                    redis.getColumna() > evento.getColumnaAsientos();
-
-                if (invalido) {
-                    // Se imprime cuando cualquiera de las validaciones anteriores falla
-                    log.warn(
-                        "⚠️  [Redis] Asiento remoto inválido ({}, {}): fuera de rango para evento idLocal={} (filas 1-{}, columnas 1-{})",
-                        redis.getFila(),
-                        redis.getColumna(),
-                        evento.getId(),
-                        evento.getFilaAsientos(),
-                        evento.getColumnaAsientos()
-                    );
-
-                    // Si es inválido → se descarta el dato de Redis
-                    redis = null;
-                }
+        for (AsientoRequestDTO a : redisAsientos) {
+            if (a == null || a.getFila() == null || a.getColumna() == null) {
+                ignoradosInvalidos++;
+                continue;
             }
+            int fila = a.getFila();
+            int col = a.getColumna();
 
-
-            // ----------- REGLA 1: VENDIDO EN DB MANDA ----------- //
-            if (asientoDB.getEstado() == AsientoEstado.VENDIDO) {
-                resultado.add(
-                    new AsientoEstadoDTO(asientoDB.getFila(), asientoDB.getColumna(), "VENDIDO", null)
-                );
+            boolean fueraDeRango = fila < 1 || col < 1 || fila > maxFilas || col > maxCols;
+            if (fueraDeRango) {
+                ignoradosFueraDeRango++;
                 continue;
             }
 
-            // ----------- REGLA 2: REDIS PUEDE INDICAR BLOQUEO ----------- //
-            if (redis != null && redis.getExpira() != null) {
-                Instant expira = redis.getExpira();
+            String estadoNorm = normalizarEstadoRedis(a.getEstado());
 
-                if (expira.isAfter(ahora)) {
-                    // Bloqueo vigente
-                    log.info(
-                        "🔒 [Redis] Asiento ({},{}) bloqueado vigente",
-                        asientoDB.getFila(),
-                        asientoDB.getColumna()
-                    );
-
-                    resultado.add(
-                        new AsientoEstadoDTO(
-                            asientoDB.getFila(),
-                            asientoDB.getColumna(),
-                            "BLOQUEADO_VIGENTE",
-                            expira
-                        )
-                    );
-                } else {
-                    // Bloqueo expirado → tratamos el asiento como LIBRE
-                    log.info(
-                        "🕒 [Redis] Asiento ({},{}) bloqueo expirado",
-                        asientoDB.getFila(),
-                        asientoDB.getColumna()
-                    );
-
-                    resultado.add(
-                        new AsientoEstadoDTO(
-                            asientoDB.getFila(),
-                            asientoDB.getColumna(),
-                            "LIBRE",
-                            null
-                        )
-                    );
-                }
-
-                continue; // ya decidimos por Redis para este asiento
+            // Si Redis manda "LIBRE", lo ignoramos porque el default ya es LIBRE
+            if ("LIBRE".equals(estadoNorm)) {
+                ignoradosLibres++;
+                continue;
             }
 
-            // ----------- REGLA 3: SI NO HAY NADA ESPECIAL → LIBRE ----------- //
-            resultado.add(
-                new AsientoEstadoDTO(
-                    asientoDB.getFila(),
-                    asientoDB.getColumna(),
-                    "LIBRE",
-                    null
-                )
+            String k = key(fila, col);
+            if (redisMap.containsKey(k)) {
+                duplicados++;
+            }
+            redisMap.put(k, a);
+        }
+
+        if (ignoradosFueraDeRango > 0 || ignoradosLibres > 0 || ignoradosInvalidos > 0 || duplicados > 0) {
+            log.warn(
+                "⚠️ [Mapa-Asientos] Redis filtrado eventoIdLocal={} externalId={} -> usados={} | invalidos={} | fueraDeRango={} | libresIgnorados={} | duplicados={}",
+                eventoIdLocal, externalId, redisMap.size(), ignoradosInvalidos, ignoradosFueraDeRango, ignoradosLibres, duplicados
             );
+        } else {
+            log.info(
+                "✅ [Mapa-Asientos] Redis indexado eventoIdLocal={} externalId={} -> usados={} (no-libres)",
+                eventoIdLocal, externalId, redisMap.size()
+            );
+        }
+
+        // 3) Construir grilla completa
+        List<AsientoEstadoDTO> resultado = new ArrayList<>(totalEsperado);
+        Instant ahora = Instant.now();
+
+        for (int fila = 1; fila <= maxFilas; fila++) {
+            for (int col = 1; col <= maxCols; col++) {
+
+                AsientoRequestDTO redis = redisMap.get(key(fila, col));
+                if (redis == null) {
+                    resultado.add(new AsientoEstadoDTO(fila, col, "LIBRE", null));
+                    continue;
+                }
+
+                String estadoRedis = normalizarEstadoRedis(redis.getEstado());
+                Instant expira = redis.getExpira();
+
+                if ("VENDIDO".equals(estadoRedis) || "OCUPADO".equals(estadoRedis)) {
+                    resultado.add(new AsientoEstadoDTO(fila, col, "VENDIDO", null));
+                    continue;
+                }
+
+                if ("BLOQUEADO".equals(estadoRedis)) {
+                    if (expira != null && expira.isAfter(ahora)) {
+                        resultado.add(new AsientoEstadoDTO(fila, col, "BLOQUEADO_VIGENTE", expira));
+                    } else if (expira != null) {
+                        resultado.add(new AsientoEstadoDTO(fila, col, "BLOQUEADO_EXPIRADO", expira));
+                    } else {
+                        // Bloqueado sin expira explícita
+                        resultado.add(new AsientoEstadoDTO(fila, col, "BLOQUEADO_VIGENTE", null));
+                    }
+                    continue;
+                }
+
+                // Cualquier otro estado raro: lo devolvemos tal cual normalizado
+                resultado.add(new AsientoEstadoDTO(fila, col, estadoRedis, expira));
+            }
         }
 
         return resultado;
     }
 
     /**
-     * Parsea el JSON devuelto por el proxy (estado de asientos en Redis)
-     * a un objeto ProxyEstadoAsientosResponse.
+     * Estado de un asiento puntual.
+     * (NO reconstruye toda la grilla).
      *
-     * Si hay error de parseo o el JSON es nulo, devuelve null y registra un log de error.
+     * Regla:
+     * - Si no aparece en Redis => LIBRE.
      */
-    private ProxyEstadoAsientosResponse parsearRedis(String json) {
-        if (json == null) {
+    public AsientoEstadoDTO obtenerEstadoAsiento(Long eventoIdLocal, int fila, int columna) {
+
+        Evento evento = eventoRepository
+            .findById(eventoIdLocal)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento no encontrado"));
+
+        if (evento.getExternalId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El evento no tiene externalId (id cátedra)");
+        }
+
+        int maxFilas = Optional.ofNullable(evento.getFilaAsientos()).orElse(0);
+        int maxCols = Optional.ofNullable(evento.getColumnaAsientos()).orElse(0);
+
+        if (fila < 1 || columna < 1 || fila > maxFilas || columna > maxCols) {
+            // OJO: normalmente esto NO debería pasar porque Bloqueo/Venta validan rango antes.
+            log.warn(
+                "⚠️ [Mapa-Asientos] obtenerEstadoAsiento fuera de rango eventoIdLocal={} externalId={} seat=({},{}) rango=1-{}x1-{}",
+                eventoIdLocal, evento.getExternalId(), fila, columna, maxFilas, maxCols
+            );
             return null;
         }
-        try {
-            return objectMapper.readValue(json, ProxyEstadoAsientosResponse.class);
-        } catch (Exception e) {
-            log.error("💥 Error parseando JSON Redis", e);
-            return null;
+
+        ProxyEstadoAsientosResponse redisResponse = proxyService.listarEstadoAsientosRedis(evento.getExternalId());
+        List<AsientoRequestDTO> redisAsientos =
+            (redisResponse != null && redisResponse.getAsientos() != null)
+                ? redisResponse.getAsientos()
+                : Collections.emptyList();
+
+        Instant ahora = Instant.now();
+
+        for (AsientoRequestDTO a : redisAsientos) {
+            if (a == null || a.getFila() == null || a.getColumna() == null) continue;
+            if (a.getFila() != fila || a.getColumna() != columna) continue;
+
+            String estadoRedis = normalizarEstadoRedis(a.getEstado());
+            Instant expira = a.getExpira();
+
+            if ("LIBRE".equals(estadoRedis)) {
+                return new AsientoEstadoDTO(fila, columna, "LIBRE", null);
+            }
+            if ("VENDIDO".equals(estadoRedis) || "OCUPADO".equals(estadoRedis)) {
+                return new AsientoEstadoDTO(fila, columna, "VENDIDO", null);
+            }
+            if ("BLOQUEADO".equals(estadoRedis)) {
+                if (expira != null && expira.isAfter(ahora)) {
+                    return new AsientoEstadoDTO(fila, columna, "BLOQUEADO_VIGENTE", expira);
+                } else if (expira != null) {
+                    return new AsientoEstadoDTO(fila, columna, "BLOQUEADO_EXPIRADO", expira);
+                } else {
+                    return new AsientoEstadoDTO(fila, columna, "BLOQUEADO_VIGENTE", null);
+                }
+            }
+
+            return new AsientoEstadoDTO(fila, columna, estadoRedis, expira);
         }
+
+        // Si no está en Redis => es LIBRE por definición del modelo
+        log.debug(
+            "ℹ️ [Mapa-Asientos] Asiento no presente en Redis => LIBRE eventoIdLocal={} externalId={} seat=({},{})",
+            eventoIdLocal, evento.getExternalId(), fila, columna
+        );
+        return new AsientoEstadoDTO(fila, columna, "LIBRE", null);
+    }
+
+    private static String key(int fila, int columna) {
+        return fila + "-" + columna;
+    }
+
+    /**
+     * Normaliza estados devueltos por Redis/cátedra.
+     * Acepta: Bloqueado/BLOQUEADO, Vendido/VENDIDO, Ocupado/OCUPADO, Libre/LIBRE, etc.
+     */
+    private String normalizarEstadoRedis(String estado) {
+        if (estado == null) return "LIBRE";
+
+        String e = estado.trim().toUpperCase(Locale.ROOT);
+
+        if (e.contains("BLOQ")) return "BLOQUEADO";
+        if (e.contains("VEND")) return "VENDIDO";
+        if (e.contains("OCUP")) return "OCUPADO";
+        if (e.contains("LIBR")) return "LIBRE";
+
+        return e;
     }
 }
+

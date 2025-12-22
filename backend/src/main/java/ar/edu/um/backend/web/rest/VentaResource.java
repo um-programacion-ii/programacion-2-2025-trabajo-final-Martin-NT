@@ -4,7 +4,7 @@ import ar.edu.um.backend.repository.VentaRepository;
 import ar.edu.um.backend.service.VentaService;
 import ar.edu.um.backend.service.VentaSyncService;
 import ar.edu.um.backend.service.dto.VentaDTO;
-import ar.edu.um.backend.service.dto.VentaRequestDTO;
+import ar.edu.um.backend.service.dto.VentaRequestFrontendDTO;
 import ar.edu.um.backend.service.mapper.VentaMapper;
 import ar.edu.um.backend.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
@@ -160,6 +160,7 @@ public class VentaResource {
             .build();
     }
 
+
     /**
      * POST /api/ventas/eventos/{eventoId}/venta :
      * Crea una venta real para un evento, validando bloqueos en Redis
@@ -168,7 +169,7 @@ public class VentaResource {
     @PostMapping("/eventos/{eventoId}/venta")
     public ResponseEntity<VentaDTO> crearVentaParaEvento(
         @PathVariable Long eventoId,
-        @Valid @RequestBody VentaRequestDTO request
+        @Valid @RequestBody VentaRequestFrontendDTO request
     ) {
         LOG.info("[Venta] Solicitud de venta recibida para eventoIdLocal={}", eventoId);
 

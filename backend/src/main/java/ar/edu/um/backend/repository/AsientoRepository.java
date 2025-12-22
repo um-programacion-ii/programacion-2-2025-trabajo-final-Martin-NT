@@ -79,4 +79,7 @@ public interface AsientoRepository extends JpaRepository<Asiento, Long> {
      * con los asientos reales persistidos en la base.
      */
     Optional<Asiento> findByEventoIdAndFilaAndColumna(Long eventoId, Integer fila, Integer columna);
+
+    List<Asiento> findByEventoId(Long eventoId);
+
 }
