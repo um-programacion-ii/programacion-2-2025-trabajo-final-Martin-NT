@@ -1,5 +1,4 @@
 package ar.edu.um.backend.service;
-
 import ar.edu.um.backend.domain.Asiento;
 import ar.edu.um.backend.domain.Evento;
 import ar.edu.um.backend.domain.enumeration.AsientoEstado;
@@ -28,12 +27,15 @@ import org.springframework.stereotype.Service;
  *    2) guardar ventas locales y mantener integridad referencial.
  *
  * Regla acordada:
- * - Si el proxy/Redis devuelve solo NO-LIBRES, entonces "faltantes" => LIBRE.
+ * - Si el proxy/Redis devuelve solo NO-LIBRES, entonces "faltantes" => LIBRE (en tiempo real).
  *
- * Estrategia:
+ * Estrategia (optimizada):
  * 1) Asegurar grilla completa en DB (crear los que falten como LIBRE).
- * 2) Aplicar estados remotos para los asientos presentes en la respuesta.
- * 3) Para asientos que NO vinieron en remoto: setear LIBRE (y limpiar personaActual).
+ * 2) Aplicar estados remotos SOLO para los asientos presentes en la respuesta.
+ * 3) NO recorrer la grilla completa para “liberar por diferencia”.
+
+ *   El mapa final para el frontend lo calcula AsientoEstadoService contra Redis (y completa LIBRES).
+ *   Por performance y coherencia con la fuente de verdad, evitamos “liberar por diferencia” en DB.
  *
  * Importante:
  * - NO se borran asientos locales (evita romper FKs con ventas).
@@ -92,7 +94,7 @@ public class AsientoSyncService {
             (response != null && response.getAsientos() != null) ? response.getAsientos() : List.of();
 
         log.info(
-            "📥 [Sync-Asientos] Remotos recibidos externalId={} -> {} asiento(s) (nota: faltantes se considerarán LIBRE)",
+            "📥 [Sync-Asientos] Remotos recibidos externalId={} -> {} asiento(s). (SYNC-LIVIANO: no se libera por diferencia)",
             externalId,
             remotos.size()
         );
@@ -118,7 +120,7 @@ public class AsientoSyncService {
 
         // 3) Asegurar grilla completa en DB (crear faltantes como LIBRE)
         AtomicInteger creadosGrilla = new AtomicInteger(0);
-        List<Asiento> aGuardar = new ArrayList<>();
+        List<Asiento> aCrear = new ArrayList<>();
 
         for (int fila = 1; fila <= maxFilas; fila++) {
             for (int col = 1; col <= maxCols; col++) {
@@ -131,15 +133,15 @@ public class AsientoSyncService {
                         .personaActual(null)
                         .evento(eventoLocal);
 
-                    aGuardar.add(nuevo);
+                    aCrear.add(nuevo);
                     index.put(k, nuevo);
                     creadosGrilla.incrementAndGet();
                 }
             }
         }
 
-        if (!aGuardar.isEmpty()) {
-            asientoRepository.saveAll(aGuardar);
+        if (!aCrear.isEmpty()) {
+            asientoRepository.saveAll(aCrear);
         }
 
         if (creadosGrilla.get() > 0) {
@@ -150,12 +152,15 @@ public class AsientoSyncService {
             );
         }
 
-        // 4) Aplicar estados remotos (y registrar cuáles vinieron)
+        // 4) Aplicar estados remotos SOLO para los asientos presentes
         AtomicInteger actualizadosPorRemoto = new AtomicInteger(0);
         AtomicInteger ignorados = new AtomicInteger(0);
 
+        // (Lo dejamos por trazabilidad, aunque en la opción A no se usa para liberar)
         Set<String> keysVistasEnRemoto = new HashSet<>(Math.max(remotos.size() * 2, 16));
-        List<Asiento> aGuardarCambios = new ArrayList<>();
+
+        // Para evitar duplicados en saveAll (misma entidad tocada 2 veces), usamos Set
+        Set<Asiento> aGuardarCambios = new HashSet<>();
 
         for (AsientoRequestDTO remoto : remotos) {
             if (remoto == null || remoto.getFila() == null || remoto.getColumna() == null) {
@@ -187,7 +192,11 @@ public class AsientoSyncService {
             if (asiento == null) {
                 // No debería ocurrir porque completamos grilla, pero por las dudas.
                 ignorados.incrementAndGet();
-                log.warn("⚠️ [Sync-Asientos] Inconsistencia: no existe en índice el asiento {} para externalId={}", k, externalId);
+                log.warn(
+                    "⚠️ [Sync-Asientos] Inconsistencia: no existe en índice el asiento {} para externalId={}",
+                    k,
+                    externalId
+                );
                 continue;
             }
 
@@ -206,41 +215,22 @@ public class AsientoSyncService {
             }
         }
 
-        // 5) Faltantes => LIBRE (y limpiar personaActual)
-        AtomicInteger liberadosPorDiferencia = new AtomicInteger(0);
-
-        for (int fila = 1; fila <= maxFilas; fila++) {
-            for (int col = 1; col <= maxCols; col++) {
-                String k = key(fila, col);
-                if (!keysVistasEnRemoto.contains(k)) {
-                    Asiento asiento = index.get(k);
-                    if (asiento == null) continue;
-
-                    // Regla: si no está en remoto => LIBRE
-                    if (asiento.getEstado() != AsientoEstado.LIBRE || asiento.getPersonaActual() != null) {
-                        asiento.setEstado(AsientoEstado.LIBRE);
-                        asiento.setPersonaActual(null);
-                        aGuardarCambios.add(asiento);
-                        liberadosPorDiferencia.incrementAndGet();
-                    }
-                }
-            }
-        }
-
         if (!aGuardarCambios.isEmpty()) {
-            // Nota: puede contener duplicados si un asiento fue tocado 2 veces; no rompe, pero podés deduplicar si querés.
             asientoRepository.saveAll(aGuardarCambios);
         }
 
+        // [SYNC-LIVIANO / REDIS-SOURCE-OF-TRUTH]
+        // Opción A: NO hacemos “liberar por diferencia” recorriendo grilla completa.
+        // Eso lo resuelve el mapa final en tiempo real (AsientoEstadoService + Redis).
+
         log.info(
-            "✅ [Sync-Asientos] Fin sync evento idLocal={} externalId={} | totalEsperado={} | remotos={} | creadosGrilla={} | actualizadosRemoto={} | liberadosPorDiferencia={} | ignorados={}",
+            "✅ [Sync-Asientos] Fin sync (SYNC-LIVIANO) evento idLocal={} externalId={} | totalEsperado={} | remotos={} | creadosGrilla={} | actualizadosRemoto={} | ignorados={}",
             eventoLocal.getId(),
             externalId,
             totalEsperado,
             remotos.size(),
             creadosGrilla.get(),
             actualizadosPorRemoto.get(),
-            liberadosPorDiferencia.get(),
             ignorados.get()
         );
     }

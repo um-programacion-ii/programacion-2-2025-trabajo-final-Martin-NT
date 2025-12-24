@@ -1,4 +1,6 @@
 package ar.edu.um.backend.web.rest;
+
+import ar.edu.um.backend.domain.Evento;
 import ar.edu.um.backend.repository.EventoRepository;
 import ar.edu.um.backend.security.AuthoritiesConstants;
 import ar.edu.um.backend.service.AsientoBloqueoService;
@@ -36,6 +38,15 @@ import tech.jhipster.web.util.ResponseUtil;
  *
  * También administra la sincronización manual de eventos entre:
  *   Backend ←→ Proxy-Service ←→ Servidor de la cátedra.
+ *
+ * ETIQUETA / ACLARACIÓN IMPORTANTE SOBRE IDs:
+ * - En este controller:
+ *   - /api/eventos/{id} (detalle) usa "id" = externalId (ID de cátedra) porque viene del proxy.
+ *   - /api/eventos/locales/{id} usa "id" = idLocal (PK de la BD local) para debug/admin.
+ *   - /api/eventos/{id}/asientos usa "id" = externalId y traduce a idLocal internamente
+ *     (evita confusión como cuando probaste 1051 en un endpoint que esperaba externalId).
+ * - Si querés 100% cero confusión, lo ideal es renombrar a /api/eventos/external/{externalId}/asientos,
+ *   pero por ahora mantenemos tu ruta y lo documentamos bien.
  */
 @RestController
 @RequestMapping("/api/eventos")
@@ -54,7 +65,13 @@ public class EventoResource {
     private final AsientoBloqueoService asientoBloqueoService;
     private final EventoSyncService eventoSyncService;
 
-    public EventoResource(EventoService eventoService, EventoRepository eventoRepository, AsientoEstadoService asientoEstadoService, AsientoBloqueoService asientoBloqueoService, EventoSyncService eventoSyncService) {
+    public EventoResource(
+        EventoService eventoService,
+        EventoRepository eventoRepository,
+        AsientoEstadoService asientoEstadoService,
+        AsientoBloqueoService asientoBloqueoService,
+        EventoSyncService eventoSyncService
+    ) {
         this.eventoService = eventoService;
         this.eventoRepository = eventoRepository;
         this.asientoEstadoService = asientoEstadoService;
@@ -190,6 +207,10 @@ public class EventoResource {
     /**
      * {@code GET  /eventos/resumidos} : get all the eventos con información resumida.
      *
+     * IMPORTANTE:
+     * - El "id" que devuelve este endpoint es el externalId (ID cátedra),
+     *   porque la fuente es el proxy/cátedra, no tu BD local.
+     *
      * @return
      */
     @GetMapping("/resumidos")
@@ -199,26 +220,32 @@ public class EventoResource {
     }
 
     /**
-     * {@code GET  /eventos/eventos}/id} : get the "id" evento.
+     * {@code GET  /eventos/{id}} : get evento por ID (ID cátedra / externalId).
+     *
+     * IMPORTANTE:
+     * - {id} = externalId (ID de la cátedra)
      *
      * @return
      */
     @GetMapping("/{id}")
     public ProxyEventoDetalleDTO getEventoId(@PathVariable("id") Long id) {
-        LOG.info("[EventoResource] GET /api/eventos/{}", id);
+        LOG.info("[EventoResource] GET /api/eventos/{} (externalId)", id);
         return eventoService.findOneById(id);
     }
 
-
     /**
-     * {@code GET  /eventos/:id} : get the "id" evento.
+     * {@code GET  /eventos/locales/{id}} : get el evento LOCAL por idLocal (PK BD local).
+     *
+     * IMPORTANTE:
+     * - {id} = idLocal (PK de tu BD)
+     * - Este endpoint es útil para debug/admin.
      *
      * @param id the id of the eventoDTO to retrieve.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the eventoDTO, or with status {@code 404 (Not Found)}.
      */
     @GetMapping("/locales/{id}")
     public ResponseEntity<EventoDTO> getEventoLocal(@PathVariable("id") Long id) {
-        LOG.debug("REST request to get Active Evento : {}", id);
+        LOG.debug("REST request to get Active Evento local : {}", id);
         Optional<EventoDTO> eventoDTO = eventoService.findOne(id);
         return ResponseUtil.wrapOrNotFound(eventoDTO);
     }
@@ -226,26 +253,42 @@ public class EventoResource {
     /**
      * GET  /api/eventos/{id}/asientos
      *
-     * Devuelve el mapa de asientos del evento en tiempo real, (estado-asientos-tiempo-real)
+     * Devuelve el mapa de asientos del evento en tiempo real,
      * usando Redis como fuente de verdad y completando LIBRES por diferencia.
+     *
+     * IMPORTANTE (consistencia con tus pruebas):
+     * - {id} = externalId (ID cátedra) → es el que vos usás desde /api/eventos/resumidos
+     * - Internamente se busca el evento local por externalId para obtener idLocal y grilla
+     * - Si probás con idLocal (ej: 1051) acá, va a fallar con "no sincronizado" porque NO es externalId
      */
     @GetMapping("/{id}/asientos")
     public ResponseEntity<List<AsientoEstadoDTO>> obtenerEstadoActualAsientos(@PathVariable Long id) {
-        LOG.info("[EventoResource] GET /api/eventos/{}/asientos (mapa en tiempo real)", id);
+        // id = externalId (por diseño de endpoints públicos)
+        LOG.info("[EventoResource] GET /api/eventos/{}/asientos (externalId)", id);
 
-        List<AsientoEstadoDTO> mapa = asientoEstadoService.obtenerEstadoActualDeAsientos(id);
+        Evento eventoLocal = eventoRepository
+            .findByExternalId(id)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Evento no sincronizado localmente. Ejecutá POST /api/eventos/sync-eventos y reintentá."
+            ));
 
+        List<AsientoEstadoDTO> mapa = asientoEstadoService.obtenerEstadoActualDeAsientos(eventoLocal.getId());
         return ResponseEntity.ok(mapa);
     }
 
     /**
      * POST /api/eventos/{id}/bloqueos
      *
-     * Solicita el bloqueo de uno o más asientos para un evento local.
+     * Solicita el bloqueo de uno o más asientos para un evento (externalId).
      *
      * El bloqueo es "todo o nada":
      * - Si todos los asientos pueden bloquearse → resultado=true.
      * - Si alguno está ocupado o bloqueado → resultado=false con detalle por asiento.
+     *
+     * IMPORTANTE:
+     * - {id} = externalId (ID cátedra)
+     * - El body puede incluir eventoId (externalId) y se valida coherencia.
      *
      * Body (Payload 6):
      * {
@@ -255,41 +298,37 @@ public class EventoResource {
      *     { "fila": 2, "columna": 2 }
      *   ]
      * }
-     *
-     * Respuesta (ejemplo):
-     * {
-     *   "resultado": false,
-     *   "descripcion": "No todos los asientos pueden ser bloqueados",
-     *   "eventoId": 1,
-     *   "asientos": [
-     *     { "fila": 2, "columna": 1, "estado": "Ocupado" },
-     *     { "fila": 2, "columna": 2, "estado": "Bloqueado" }
-     *   ]
-     * }
      */
     @PostMapping("/{id}/bloqueos")
     public ResponseEntity<AsientoBloqueoResponseDTO> bloquearAsientos(
-        @PathVariable("id") Long eventoIdLocal,
+        @PathVariable("id") Long externalId,
         @RequestBody AsientoBloqueoRequestDTO request
     ) {
-        LOG.info("🔒 [Bloqueo] POST /api/eventos/{}/bloqueos body={}", eventoIdLocal, request);
+        LOG.info("🔒 [Bloqueo] POST /api/eventos/{}/bloqueos (externalId) body={}", externalId, request);
+
+        Evento eventoLocal = eventoRepository
+            .findByExternalId(externalId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Evento no sincronizado localmente. Ejecutá POST /api/eventos/sync-eventos y reintentá."
+            ));
+
+        // (Opcional pero recomendable) validar coherencia body vs path
+        if (request != null && request.getEventoId() != null && !request.getEventoId().equals(externalId)) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "El eventoId del body no coincide con el externalId del path."
+            );
+        }
 
         try {
-            AsientoBloqueoResponseDTO respuesta =
-                asientoBloqueoService.bloquearAsientos(eventoIdLocal, request);
-
+            AsientoBloqueoResponseDTO respuesta = asientoBloqueoService.bloquearAsientos(eventoLocal.getId(), request);
             return ResponseEntity.ok(respuesta);
-
         } catch (IllegalStateException e) {
-            LOG.warn(
-                "⚠️ [Bloqueo] Error de negocio para eventoIdLocal={}: {}",
-                eventoIdLocal,
-                e.getMessage()
-            );
+            LOG.warn("⚠️ [Bloqueo] Error de negocio externalId={}: {}", externalId, e.getMessage());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
-
 
     /**
      * POST /api/eventos/sync-eventos

@@ -6,5 +6,5 @@ data class AsientoEstadoDTO (
     val fila: Int,
     val columna: Int,
     val estado: String,
-    val expira: String
+    val expira: String?, //atributo opcional
 )

@@ -190,10 +190,10 @@ object ApiClient {
 
     suspend fun venderAsientos(eventoId: Long, request: VentaRequestDTO): Result<VentaResponseDTO> {
         return try {
-            println("POST /api/ventas/$eventoId/venta")
+            println("POST /api/ventas/eventos/$eventoId/venta")
             println("Request body: ${json.encodeToString(request)}")
 
-            val response: HttpResponse = client.post("/api/ventas/$eventoId/venta") {
+            val response: HttpResponse = client.post("/api/ventas/eventos/$eventoId/venta") {
                 addAuth()
                 setBody(request)
             }

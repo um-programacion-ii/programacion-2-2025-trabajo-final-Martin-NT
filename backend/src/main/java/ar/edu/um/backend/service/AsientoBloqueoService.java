@@ -125,9 +125,10 @@ public class AsientoBloqueoService {
             // Si ya está bloqueado (vigente) -> no se puede bloquear
             if ("BLOQUEADO_VIGENTE".equalsIgnoreCase(est) || "BLOQUEADO".equalsIgnoreCase(est)) {
                 todosBloqueables = false;
-                // acá sí tiene sentido devolver expira si la tenés
                 detalle.add(new AsientoEstadoDTO(a.getFila(), a.getColumna(), "Bloqueado", expira));
+                continue;
             }
+
 
             // Nota: "BLOQUEADO_EXPIRADO" no debería impedir bloquear:
             // si está expirado, el intento de bloqueo debería poder avanzar y que la cátedra decida.

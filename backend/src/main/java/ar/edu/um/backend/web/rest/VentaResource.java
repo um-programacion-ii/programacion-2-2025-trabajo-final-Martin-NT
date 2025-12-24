@@ -1,5 +1,7 @@
 package ar.edu.um.backend.web.rest;
+import ar.edu.um.backend.domain.Evento;
 import ar.edu.um.backend.domain.Venta;
+import ar.edu.um.backend.repository.EventoRepository;
 import ar.edu.um.backend.repository.VentaRepository;
 import ar.edu.um.backend.service.VentaService;
 import ar.edu.um.backend.service.VentaSyncService;
@@ -18,8 +20,10 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
 /**
@@ -44,17 +48,14 @@ public class VentaResource {
 
     private final VentaService ventaService;
     private final VentaRepository ventaRepository;
+    private final EventoRepository  eventoRepository;
     private final VentaSyncService ventaSyncService;
     private final VentaMapper ventaMapper;
 
-    public VentaResource(
-        VentaService ventaService,
-        VentaRepository ventaRepository,
-        VentaSyncService ventaSyncService,
-        VentaMapper ventaMapper
-    ) {
+    public VentaResource(VentaService ventaService, VentaRepository ventaRepository, EventoRepository eventoRepository, VentaSyncService ventaSyncService, VentaMapper ventaMapper) {
         this.ventaService = ventaService;
         this.ventaRepository = ventaRepository;
+        this.eventoRepository = eventoRepository;
         this.ventaSyncService = ventaSyncService;
         this.ventaMapper = ventaMapper;
     }
@@ -161,22 +162,39 @@ public class VentaResource {
             .build();
     }
 
-
     /**
      * POST /api/ventas/eventos/{eventoId}/venta :
      * Crea una venta real para un evento, validando bloqueos en Redis
      * y confirmando la operación con la cátedra.
+     *
+     * IMPORTANTE (consistencia con EventoResource):
+     * - {eventoId} = externalId (ID de la cátedra)
+     * - El frontend SIEMPRE usa externalId
+     * - Internamente se resuelve el idLocal para persistencia
      */
     @PostMapping("/eventos/{eventoId}/venta")
     public ResponseEntity<ProxyVentaResponseDTO> crearVentaParaEvento(
-        @PathVariable Long eventoId,
+        @PathVariable("eventoId") Long externalId,
         @Valid @RequestBody VentaRequestFrontendDTO request
     ) {
-        LOG.info("[Venta] Solicitud de venta recibida para eventoId={} (local)", eventoId);
+        LOG.info("[Venta] Solicitud de venta recibida para eventoId={} (externalId)", externalId);
 
-        request.setEventoId(eventoId);
+        // 1) Resolver evento local a partir del externalId
+        Evento eventoLocal = eventoRepository
+            .findByExternalId(externalId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Evento no sincronizado localmente. Ejecutá POST /api/eventos/sync-eventos y reintentá."
+            ));
 
+        // 2) Setear idLocal en el request (lo que espera el service)
+        request.setEventoId(eventoLocal.getId());
+
+        // 3) Delegar al service (firma correcta)
         ProxyVentaResponseDTO resp = ventaSyncService.procesarVenta(request);
+
         return ResponseEntity.ok(resp);
     }
+
+
 }
