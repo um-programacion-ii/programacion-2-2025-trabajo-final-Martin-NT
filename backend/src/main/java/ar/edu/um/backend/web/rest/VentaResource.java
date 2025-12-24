@@ -3,6 +3,7 @@ import ar.edu.um.backend.domain.Venta;
 import ar.edu.um.backend.repository.VentaRepository;
 import ar.edu.um.backend.service.VentaService;
 import ar.edu.um.backend.service.VentaSyncService;
+import ar.edu.um.backend.service.dto.ProxyVentaResponseDTO;
 import ar.edu.um.backend.service.dto.VentaDTO;
 import ar.edu.um.backend.service.dto.VentaRequestFrontendDTO;
 import ar.edu.um.backend.service.mapper.VentaMapper;
@@ -167,19 +168,15 @@ public class VentaResource {
      * y confirmando la operación con la cátedra.
      */
     @PostMapping("/eventos/{eventoId}/venta")
-    public ResponseEntity<VentaDTO> crearVentaParaEvento(
+    public ResponseEntity<ProxyVentaResponseDTO> crearVentaParaEvento(
         @PathVariable Long eventoId,
         @Valid @RequestBody VentaRequestFrontendDTO request
     ) {
-        LOG.info("[Venta] Solicitud de venta recibida para eventoIdLocal={}", eventoId);
+        LOG.info("[Venta] Solicitud de venta recibida para eventoId={} (local)", eventoId);
 
-        // nos aseguramos de usar el id local del path
-        request.setEventoIdLocal(eventoId);
+        request.setEventoId(eventoId);
 
-        Venta venta = ventaSyncService.procesarVenta(request);
-        VentaDTO dto = ventaMapper.toDto(venta);
-
-        // Podría devolver 201 Created, pero 200 OK también es válido
-        return ResponseEntity.ok(dto);
+        ProxyVentaResponseDTO resp = ventaSyncService.procesarVenta(request);
+        return ResponseEntity.ok(resp);
     }
 }
