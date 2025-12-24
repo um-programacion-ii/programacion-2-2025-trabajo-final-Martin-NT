@@ -1,5 +1,4 @@
 package ar.edu.um.tpfinal.viewmodel
-
 import ar.edu.um.tpfinal.dto.AsientoEstadoDTO
 
 sealed class SeatsUiState {
@@ -19,7 +18,8 @@ sealed class SeatsUiState {
 
     object Vendiendo : SeatsUiState()
 
-    object Exito : SeatsUiState()
+    // CAMBIO: De 'object' a 'data class' para recibir el DTO del servidor
+    data class Exito(val venta: ar.edu.um.tpfinal.dto.VentaResponseDTO) : SeatsUiState()
 
     data class Error(val mensaje: String) : SeatsUiState()
 }

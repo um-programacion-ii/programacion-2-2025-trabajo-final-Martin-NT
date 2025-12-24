@@ -110,6 +110,7 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+    implementation("androidx.compose.material:material-icons-core")
 }
 
 compose.desktop {

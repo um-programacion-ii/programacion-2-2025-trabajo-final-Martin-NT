@@ -1,5 +1,4 @@
 package ar.edu.um.tpfinal.navigation
-
 import androidx.compose.runtime.Composable
 import ar.edu.um.tpfinal.screens.EventsScreen
 import cafe.adriel.voyager.core.screen.Screen
@@ -15,6 +14,9 @@ class EventsNavigation : Screen {
         EventsScreen(
             onEventClick = { event ->
                 navigator.push(EventsDetailNavigation(event))
+            },
+            onLogout = {
+                navigator.replace(LoginNavigation())
             }
         )
     }

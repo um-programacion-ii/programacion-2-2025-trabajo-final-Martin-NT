@@ -4,11 +4,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class VentaResponseDTO(
-    private val eventoId: Long,
-    private val ventaId: Long,
-    private val fechaVenta: String,
-    private val asientos: List<VentaAsientoDTO>,
-    private val resultado: Boolean,
-    private val descripcion: String,
-    private val precioVenta: Double
+    val eventoId: Long,
+    val ventaId: Long,
+    val fechaVenta: String,
+    val asientos: List<VentaAsientoDTO>,
+    val resultado: Boolean,
+    val descripcion: String,
+    val precioVenta: Double
 )

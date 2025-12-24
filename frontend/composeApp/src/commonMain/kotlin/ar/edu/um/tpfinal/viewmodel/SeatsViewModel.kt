@@ -13,7 +13,7 @@ class SeatsViewModel {
     private val _uiState = MutableStateFlow<SeatsUiState>(SeatsUiState.Inactivo)
     val uiState: StateFlow<SeatsUiState> = _uiState.asStateFlow()
 
-    // ✅ Persistimos la selección para poder vender aunque el estado cambie a Bloqueados
+    // Persistimos la selección para poder vender aunque el estado cambie a Bloqueados
     private var seleccionActual: List<Pair<Int, Int>> = emptyList()
 
     // =========================
@@ -54,7 +54,7 @@ class SeatsViewModel {
             nuevos.add(asiento)
         }
 
-        // ✅ Guardamos selección actual
+        // Guardamos selección actual
         seleccionActual = nuevos
 
         _uiState.value = estadoActual.copy(seleccionados = nuevos)
@@ -70,7 +70,7 @@ class SeatsViewModel {
         val seleccion = estadoActual.seleccionados
         if (seleccion.isEmpty()) return
 
-        // ✅ Persistimos selección por si cambia el estado
+        // Persistimos selección por si cambia el estado
         seleccionActual = seleccion
 
         _uiState.value = SeatsUiState.Bloqueando
@@ -100,7 +100,6 @@ class SeatsViewModel {
         eventoId: Long,
         persona: String
     ) {
-        // ✅ Ahora vendemos usando la selección guardada, no el estado UI actual
         if (seleccionActual.isEmpty()) {
             _uiState.value = SeatsUiState.Error("No hay asientos seleccionados para vender")
             return
@@ -122,8 +121,9 @@ class SeatsViewModel {
         val result = ApiClient.venderAsientos(eventoId, request)
 
         result.fold(
-            onSuccess = {
-                _uiState.value = SeatsUiState.Exito
+            onSuccess = { ventaResponse ->
+                // Ahora se pasa el resultado (ventaResponse) a la data class
+                _uiState.value = SeatsUiState.Exito(venta = ventaResponse)
             },
             onFailure = { error ->
                 _uiState.value = SeatsUiState.Error(
