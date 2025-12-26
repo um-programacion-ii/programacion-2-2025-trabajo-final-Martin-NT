@@ -203,7 +203,7 @@ Prueba en Proxy con Postman
 #### 🔹 6. Ver estado de asientos desde el proxy (Redis) 
 Prueba en Proxy con Postman
 En Postman
-- http://localhost:8081/api/proxy/eventos/<id>/estado-asientos
+- GET http://localhost:8081/api/proxy/eventos/<id>/estado-asientos
 - Headers: Authorization Bearer <token>
 
 #### 🔹 7. Ver los asientos ya sincronizados (Mapa Final de Asientos)
