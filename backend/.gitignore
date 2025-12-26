@@ -153,7 +153,7 @@ coverage/
 .nyc_output/
 
 # Environment variables
-.env
+#.env
 
 # Documentos personales
 /docs/
