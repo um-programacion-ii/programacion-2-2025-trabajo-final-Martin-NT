@@ -54,7 +54,7 @@ Antes de ejecutar el proyecto necesitás:
 - Kafka y Redis de la cátedra activos
 
 ### Variables de Entorno
-Crear un archivo .env (usado por backend y proxy):
+Crear un archivo .env (usado por backend y proxy, uno para cada uno):
 ```bash
 # Redis cátedra
 REDIS_HOST=IP_REDIS_CATEDRA
