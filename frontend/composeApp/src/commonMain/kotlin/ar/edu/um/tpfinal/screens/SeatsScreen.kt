@@ -229,7 +229,6 @@ fun SeatsScreen(
     }
 }
 
-// SeatIcon y LegendItem se mantienen iguales...
 @Composable
 fun SeatIcon(asiento: AsientoEstadoDTO, isSeleccionado: Boolean, onClick: () -> Unit) {
     val color = when {

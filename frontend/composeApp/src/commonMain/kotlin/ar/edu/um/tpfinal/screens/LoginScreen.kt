@@ -37,19 +37,29 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit // Callback para navegar luego del login OK
 ) {
+    // Maneja el estado del login (Inactivo / Cargando / Exito / Error)
     val viewModel = remember { LoginViewModel() }
+
+    // Usado para lanzar la llamada de login
     val scope = rememberCoroutineScope()
 
+    // ESTADO LOCAL DE CAMPOS
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
+    // La UI se redibuja automáticamente cuando cambia
     val state by viewModel.uiState.collectAsState()
 
+    // Evita navegar múltiples veces si el estado cambia
     var navegado by remember { mutableStateOf(false) }
 
-    // Navegar SOLO una vez cuando el login es exitoso
+    /**
+     * Cuando el estado pasa a Exito:
+     * - se ejecuta onLoginSuccess()
+     * - se navega una sola vez
+     */
     LaunchedEffect(state) {
         if (!navegado && state is LoginUiState.Exito) {
             navegado = true
@@ -60,7 +70,6 @@ fun LoginScreen(
     val cargando = state is LoginUiState.Cargando
     val camposValidos = username.isNotBlank() && password.isNotBlank()
 
-    // Fondo Login
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -69,8 +78,6 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
-        // Card central (recuadro)
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -86,6 +93,7 @@ fun LoginScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
+                // TÍTULO
                 Text(
                     text = "Iniciar Sesión",
                     style = MaterialTheme.typography.headlineSmall,
@@ -93,7 +101,6 @@ fun LoginScreen(
                     modifier = Modifier.padding(bottom = 20.dp)
                 )
 
-                // Etiquetas arriba + campo limpio (similar a tu ejemplo)
                 Text(
                     text = "Usuario",
                     style = MaterialTheme.typography.labelMedium,
@@ -133,6 +140,7 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
+                // BOTÓN LOGIN
                 Button(
                     onClick = {
                         scope.launch {
@@ -144,11 +152,12 @@ fun LoginScreen(
                         .height(48.dp),
                     enabled = !cargando && camposValidos,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF34A853), // verde
+                        containerColor = Color(0xFF34A853),
                         contentColor = Color.White
                     ),
                     shape = MaterialTheme.shapes.large
                 ) {
+
                     if (cargando) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),

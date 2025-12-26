@@ -16,7 +16,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
 /**
  * Sincroniza los asientos locales de un evento con los datos remotos del proxy/cátedra.
  *
@@ -68,8 +67,9 @@ public class AsientoSyncService {
 
         if (maxFilas == null || maxCols == null || maxFilas <= 0 || maxCols <= 0) {
             log.warn(
-                "⚠️ [Sync-Asientos] Evento idLocal={} sin filas/cols válidas (filas={}, cols={}). Se omite sync.",
+                "⚠️ [Sync-Asientos] Evento idLocal={} externalId={} sin filas/cols válidas (filas={}, cols={}). Se omite sync.",
                 eventoLocal.getId(),
+                externalId,
                 maxFilas,
                 maxCols
             );
@@ -94,7 +94,7 @@ public class AsientoSyncService {
             (response != null && response.getAsientos() != null) ? response.getAsientos() : List.of();
 
         log.info(
-            "📥 [Sync-Asientos] Remotos recibidos externalId={} -> {} asiento(s). (SYNC-LIVIANO: no se libera por diferencia)",
+            "📥 [Sync-Asientos] Remotos recibidos externalId={} -> {} asiento(s).",
             externalId,
             remotos.size()
         );
@@ -219,12 +219,8 @@ public class AsientoSyncService {
             asientoRepository.saveAll(aGuardarCambios);
         }
 
-        // [SYNC-LIVIANO / REDIS-SOURCE-OF-TRUTH]
-        // Opción A: NO hacemos “liberar por diferencia” recorriendo grilla completa.
-        // Eso lo resuelve el mapa final en tiempo real (AsientoEstadoService + Redis).
-
         log.info(
-            "✅ [Sync-Asientos] Fin sync (SYNC-LIVIANO) evento idLocal={} externalId={} | totalEsperado={} | remotos={} | creadosGrilla={} | actualizadosRemoto={} | ignorados={}",
+            "✅ [Sync-Asientos] Fin sync evento idLocal={} externalId={} | totalEsperado={} | remotos={} | creadosGrilla={} | actualizadosRemoto={} | ignorados={}",
             eventoLocal.getId(),
             externalId,
             totalEsperado,

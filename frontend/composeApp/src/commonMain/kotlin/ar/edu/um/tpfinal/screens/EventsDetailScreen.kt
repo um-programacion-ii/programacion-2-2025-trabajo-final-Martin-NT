@@ -27,23 +27,27 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 @Composable
 fun EventsDetailScreen(
     event: EventoResumenDTO,
-    onBack: () -> Unit
+    onBack: () -> Unit  // Callback para volver a la pantalla anterior
 ) {
+    // Permite navegar a otras pantallas (SeatsNavigation)
     val navigator = LocalNavigator.currentOrThrow
 
+    // Columna que ocupa toda la pantalla
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFCDD3D5))
     ) {
-        // --- CABECERA ---
+
+        // CABECERA
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 32.dp, start = 8.dp, end = 16.dp, bottom = 8.dp),
-            contentAlignment = Alignment.Center // Esto centra el contenido del Box
+            contentAlignment = Alignment.Center
         ) {
-            // Botón "Atrás" alineado a la izquierda
+
+            // Vuelve a la pantalla anterior (EventsScreen)
             TextButton(
                 onClick = onBack,
                 modifier = Modifier.align(Alignment.CenterStart),
@@ -52,7 +56,8 @@ fun EventsDetailScreen(
                 Text("❮ Atrás", fontSize = 14.sp, color = Color.DarkGray)
             }
 
-            // Título centrado
+
+            // Título
             Text(
                 text = "Detalle del evento",
                 style = MaterialTheme.typography.titleLarge,
@@ -62,7 +67,7 @@ fun EventsDetailScreen(
             )
         }
 
-        // --- CUERPO ---
+        // CUERPO DEL DETALLE
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -77,6 +82,8 @@ fun EventsDetailScreen(
                     .fillMaxSize()
                     .padding(24.dp)
             ) {
+
+                // TÍTULO DEL EVENTO
                 Text(
                     text = event.titulo,
                     style = MaterialTheme.typography.headlineMedium,
@@ -86,7 +93,7 @@ fun EventsDetailScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Etiqueta Tipo
+                // TIPO DE EVENTO
                 Surface(
                     color = Color(0xFFCDD3D5).copy(alpha = 0.4f),
                     shape = RoundedCornerShape(8.dp)
@@ -101,25 +108,42 @@ fun EventsDetailScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                // FECHA Y PRECIO
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Column {
                         Text("FECHA", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                         Text(event.fecha, fontWeight = FontWeight.Bold)
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text("PRECIO", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                        Text("$${event.precioEntrada}", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32), fontSize = 18.sp)
+                        Text(
+                            "$${event.precioEntrada}",
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2E7D32),
+                            fontSize = 18.sp
+                        )
                     }
                 }
 
-                HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), thickness = 0.5.dp)
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 20.dp),
+                    thickness = 0.5.dp
+                )
 
-                Text(text = "Sobre este evento", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                // DESCRIPCIÓN
+                Text(
+                    text = "Sobre este evento",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
 
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    text = event.descripcion.ifBlank { event.descripcion },
+                    text = event.descripcion,
                     style = MaterialTheme.typography.bodyLarge,
                     lineHeight = 24.sp,
                     color = Color.DarkGray
@@ -127,13 +151,26 @@ fun EventsDetailScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
 
+                // BOTÓN VER ASIENTOS
                 Button(
-                    onClick = { navigator.push(SeatsNavigation(eventoId = event.id)) },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    onClick = {
+                        // Navega al flujo de asientos usando el externalId del evento
+                        navigator.push(
+                            SeatsNavigation(eventoId = event.id)
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A237E))
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF1A237E)
+                    )
                 ) {
-                    Text("VER ASIENTOS DISPONIBLES", fontWeight = FontWeight.Bold)
+                    Text(
+                        "VER ASIENTOS DISPONIBLES",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

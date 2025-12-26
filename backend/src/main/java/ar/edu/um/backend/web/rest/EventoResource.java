@@ -1,8 +1,6 @@
 package ar.edu.um.backend.web.rest;
-
 import ar.edu.um.backend.domain.Evento;
 import ar.edu.um.backend.repository.EventoRepository;
-import ar.edu.um.backend.security.AuthoritiesConstants;
 import ar.edu.um.backend.service.AsientoBloqueoService;
 import ar.edu.um.backend.service.AsientoEstadoService;
 import ar.edu.um.backend.service.EventoService;
@@ -14,7 +12,6 @@ import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -22,7 +19,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import tech.jhipster.web.util.HeaderUtil;
@@ -39,19 +35,15 @@ import tech.jhipster.web.util.ResponseUtil;
  * También administra la sincronización manual de eventos entre:
  *   Backend ←→ Proxy-Service ←→ Servidor de la cátedra.
  *
- * ETIQUETA / ACLARACIÓN IMPORTANTE SOBRE IDs:
+ * ACLARACIÓN IMPORTANTE SOBRE IDs:
  * - En este controller:
  *   - /api/eventos/{id} (detalle) usa "id" = externalId (ID de cátedra) porque viene del proxy.
- *   - /api/eventos/locales/{id} usa "id" = idLocal (PK de la BD local) para debug/admin.
+ *   - /api/eventos/locales/{id} usa "id" = idLocal (PK de la BD local) para debug.
  *   - /api/eventos/{id}/asientos usa "id" = externalId y traduce a idLocal internamente
- *     (evita confusión como cuando probaste 1051 en un endpoint que esperaba externalId).
- * - Si querés 100% cero confusión, lo ideal es renombrar a /api/eventos/external/{externalId}/asientos,
- *   pero por ahora mantenemos tu ruta y lo documentamos bien.
  */
 @RestController
 @RequestMapping("/api/eventos")
 public class EventoResource {
-
     private static final Logger LOG = LoggerFactory.getLogger(EventoResource.class);
 
     private static final String ENTITY_NAME = "evento";
@@ -193,6 +185,8 @@ public class EventoResource {
             .build();
     }
 
+    //---------------------------------------------------------------------------------------------------------------------------------------
+
     /**
      * {@code GET  /eventos/completos} : get all the eventos con información completa.
      *
@@ -256,7 +250,7 @@ public class EventoResource {
      * Devuelve el mapa de asientos del evento en tiempo real,
      * usando Redis como fuente de verdad y completando LIBRES por diferencia.
      *
-     * IMPORTANTE (consistencia con tus pruebas):
+     * IMPORTANTE:
      * - {id} = externalId (ID cátedra) → es el que vos usás desde /api/eventos/resumidos
      * - Internamente se busca el evento local por externalId para obtener idLocal y grilla
      * - Si probás con idLocal (ej: 1051) acá, va a fallar con "no sincronizado" porque NO es externalId
