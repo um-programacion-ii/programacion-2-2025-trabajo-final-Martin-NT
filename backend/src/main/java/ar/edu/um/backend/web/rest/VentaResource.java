@@ -1,8 +1,11 @@
 package ar.edu.um.backend.web.rest;
-
+import ar.edu.um.backend.domain.Venta;
 import ar.edu.um.backend.repository.VentaRepository;
 import ar.edu.um.backend.service.VentaService;
+import ar.edu.um.backend.service.VentaSyncService;
 import ar.edu.um.backend.service.dto.VentaDTO;
+import ar.edu.um.backend.service.dto.VentaRequestFrontendDTO;
+import ar.edu.um.backend.service.mapper.VentaMapper;
 import ar.edu.um.backend.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -18,36 +21,45 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
-
 /**
- * REST controller for managing {@link ar.edu.um.backend.domain.Venta}.
+ * Controlador REST encargado de gestionar las operaciones relacionadas
+ * con la entidad {@link ar.edu.um.backend.domain.Venta}.
+ *
+ * Expone:
+ * - Endpoints CRUD tradicionales para administrar ventas locales.
+ * - Un endpoint especial para iniciar una venta real de asientos,
+ *   validando bloqueos en Redis y confirmando la operación con la cátedra
+ *   a través del proxy.
  */
 @RestController
 @RequestMapping("/api/ventas")
 public class VentaResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(VentaResource.class);
-
     private static final String ENTITY_NAME = "venta";
 
     @Value("${jhipster.clientApp.name}")
     private String applicationName;
 
     private final VentaService ventaService;
-
     private final VentaRepository ventaRepository;
+    private final VentaSyncService ventaSyncService;
+    private final VentaMapper ventaMapper;
 
-    public VentaResource(VentaService ventaService, VentaRepository ventaRepository) {
+    public VentaResource(
+        VentaService ventaService,
+        VentaRepository ventaRepository,
+        VentaSyncService ventaSyncService,
+        VentaMapper ventaMapper
+    ) {
         this.ventaService = ventaService;
         this.ventaRepository = ventaRepository;
+        this.ventaSyncService = ventaSyncService;
+        this.ventaMapper = ventaMapper;
     }
 
     /**
      * {@code POST  /ventas} : Create a new venta.
-     *
-     * @param ventaDTO the ventaDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new ventaDTO, or with status {@code 400 (Bad Request)} if the venta has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
      */
     @PostMapping("")
     public ResponseEntity<VentaDTO> createVenta(@Valid @RequestBody VentaDTO ventaDTO) throws URISyntaxException {
@@ -63,13 +75,6 @@ public class VentaResource {
 
     /**
      * {@code PUT  /ventas/:id} : Updates an existing venta.
-     *
-     * @param id the id of the ventaDTO to save.
-     * @param ventaDTO the ventaDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated ventaDTO,
-     * or with status {@code 400 (Bad Request)} if the ventaDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the ventaDTO couldn't be updated.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
      */
     @PutMapping("/{id}")
     public ResponseEntity<VentaDTO> updateVenta(
@@ -95,15 +100,7 @@ public class VentaResource {
     }
 
     /**
-     * {@code PATCH  /ventas/:id} : Partial updates given fields of an existing venta, field will ignore if it is null
-     *
-     * @param id the id of the ventaDTO to save.
-     * @param ventaDTO the ventaDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated ventaDTO,
-     * or with status {@code 400 (Bad Request)} if the ventaDTO is not valid,
-     * or with status {@code 404 (Not Found)} if the ventaDTO is not found,
-     * or with status {@code 500 (Internal Server Error)} if the ventaDTO couldn't be updated.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
+     * {@code PATCH  /ventas/:id} : Partial updates given fields of an existing venta.
      */
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<VentaDTO> partialUpdateVenta(
@@ -132,21 +129,17 @@ public class VentaResource {
 
     /**
      * {@code GET  /ventas} : get all the ventas.
-     *
-     * @param eagerload flag to eager load entities from relationships (This is applicable for many-to-many).
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of ventas in body.
      */
     @GetMapping("")
-    public List<VentaDTO> getAllVentas(@RequestParam(name = "eagerload", required = false, defaultValue = "true") boolean eagerload) {
+    public List<VentaDTO> getAllVentas(
+        @RequestParam(name = "eagerload", required = false, defaultValue = "true") boolean eagerload
+    ) {
         LOG.debug("REST request to get all Ventas");
         return ventaService.findAll();
     }
 
     /**
      * {@code GET  /ventas/:id} : get the "id" venta.
-     *
-     * @param id the id of the ventaDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the ventaDTO, or with status {@code 404 (Not Found)}.
      */
     @GetMapping("/{id}")
     public ResponseEntity<VentaDTO> getVenta(@PathVariable("id") Long id) {
@@ -157,9 +150,6 @@ public class VentaResource {
 
     /**
      * {@code DELETE  /ventas/:id} : delete the "id" venta.
-     *
-     * @param id the id of the ventaDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteVenta(@PathVariable("id") Long id) {
@@ -168,5 +158,28 @@ public class VentaResource {
         return ResponseEntity.noContent()
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, true, ENTITY_NAME, id.toString()))
             .build();
+    }
+
+
+    /**
+     * POST /api/ventas/eventos/{eventoId}/venta :
+     * Crea una venta real para un evento, validando bloqueos en Redis
+     * y confirmando la operación con la cátedra.
+     */
+    @PostMapping("/eventos/{eventoId}/venta")
+    public ResponseEntity<VentaDTO> crearVentaParaEvento(
+        @PathVariable Long eventoId,
+        @Valid @RequestBody VentaRequestFrontendDTO request
+    ) {
+        LOG.info("[Venta] Solicitud de venta recibida para eventoIdLocal={}", eventoId);
+
+        // nos aseguramos de usar el id local del path
+        request.setEventoIdLocal(eventoId);
+
+        Venta venta = ventaSyncService.procesarVenta(request);
+        VentaDTO dto = ventaMapper.toDto(venta);
+
+        // Podría devolver 201 Created, pero 200 OK también es válido
+        return ResponseEntity.ok(dto);
     }
 }

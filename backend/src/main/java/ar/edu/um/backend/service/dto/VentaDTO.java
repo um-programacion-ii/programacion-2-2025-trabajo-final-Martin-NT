@@ -11,6 +11,7 @@ import java.util.Set;
 
 /**
  * A DTO for the {@link ar.edu.um.backend.domain.Venta} entity.
+ * DTO que representa una venta expuesta por el backend.
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class VentaDTO implements Serializable {

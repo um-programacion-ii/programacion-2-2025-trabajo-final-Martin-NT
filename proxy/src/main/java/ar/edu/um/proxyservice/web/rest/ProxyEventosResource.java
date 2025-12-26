@@ -1,19 +1,21 @@
 package ar.edu.um.proxyservice.web.rest;
 import ar.edu.um.proxyservice.service.CatServiceClient;
 import ar.edu.um.proxyservice.service.EstadoAsientosRedisService;
+import ar.edu.um.proxyservice.service.dto.BloquearAsientosRequestDTO;
+import ar.edu.um.proxyservice.service.dto.BloquearAsientosResponseDTO;
 import ar.edu.um.proxyservice.service.dto.EstadoAsientosRemotoDTO;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-/**
- * Controlador REST del proxy para exponer endpoints de eventos
- * hacia el backend (o Postman), delegando en CatServiceClient (Feign).
- */
-@RestController //le dice a Spring que esta clase expone endpoints REST
-@RequestMapping("/api/proxy") //todos los endpoints de esta clase van a empezar con /api/proxy
+
+@RestController
+@RequestMapping("/api/proxy")
 public class ProxyEventosResource {
+
     private static final Logger log = LoggerFactory.getLogger(ProxyEventosResource.class);
 
     private final CatServiceClient catServiceClient;
@@ -24,116 +26,149 @@ public class ProxyEventosResource {
         this.estadoAsientosRedisService = estadoAsientosRedisService;
     }
 
-    /**
-     * GET /api/proxy/eventos-resumidos
-     *
-     * Llama a la cátedra vía Feign para obtener la lista de eventos resumidos
-     * y devuelve el JSON crudo al cliente.
-     */
-    @GetMapping("/eventos-resumidos")
+    @GetMapping(value = "/eventos-resumidos", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> listarEventosResumidos() {
         log.info("🌐 [Proxy] GET /api/proxy/eventos-resumidos");
-
         String body = catServiceClient.listarEventosResumidos();
-
         if (body == null) {
-            log.warn("🌐 [Proxy] No se pudo obtener eventos-resumidos desde la cátedra");
-            return ResponseEntity
-                    .status(HttpStatus.BAD_GATEWAY)
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"error\":\"No se pudo obtener eventos-resumidos desde la cátedra\"}");
         }
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body);
     }
 
-    /**
-     * GET /api/proxy/eventos
-     *
-     * Devuelve eventos completos desde la cátedra (JSON crudo).
-     */
-    @GetMapping("/eventos")
+    @GetMapping(value = "/eventos", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> listarEventosCompletos() {
         log.info("🌐 [Proxy] GET /api/proxy/eventos");
-
         String body = catServiceClient.listarEventosCompletos();
-
         if (body == null) {
-            log.warn("🌐 [Proxy] No se pudo obtener eventos completos desde la cátedra");
-            return ResponseEntity
-                    .status(HttpStatus.BAD_GATEWAY)
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"error\":\"No se pudo obtener eventos desde la cátedra\"}");
         }
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body);
     }
 
-    /**
-     * GET /api/proxy/eventos/{id}
-     *
-     * Devuelve el detalle de un evento por ID (JSON crudo).
-     */
-    @GetMapping("/eventos/{id}")
+    @GetMapping(value = "/eventos/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> obtenerEventoPorId(@PathVariable Long id) {
         log.info("🌐 [Proxy] GET /api/proxy/eventos/{}", id);
-
         String body = catServiceClient.obtenerEventoPorId(id);
-
         if (body == null) {
-            log.warn("🌐 [Proxy] No se pudo obtener evento {} desde la cátedra", id);
-            return ResponseEntity
-                    .status(HttpStatus.BAD_GATEWAY)
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"error\":\"No se pudo obtener el evento desde la cátedra\"}");
         }
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body);
     }
 
-    /**
-     * GET /api/proxy/eventos/forzar-actualizacion
-     *
-     * Dispara el endpoint forzar-actualizacion en la cátedra.
-     * Por ahora no usamos el body que devuelva, solo confirmamos que se invocó.
-     */
-    @GetMapping("/eventos/forzar-actualizacion")
+    @GetMapping(value = "/eventos/forzar-actualizacion", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> forzarActualizacion() {
         log.info("🌐 [Proxy] GET /api/proxy/eventos/forzar-actualizacion");
-
         String body = catServiceClient.forzarActualizacion();
-
         if (body == null) {
-            log.warn("🌐 [Proxy] Error al invocar forzar-actualizacion en la cátedra");
-            return ResponseEntity
-                    .status(HttpStatus.BAD_GATEWAY)
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"error\":\"No se pudo forzar la actualización en la cátedra\"}");
         }
-        // Si quiero devolver JSON fijo:
-        // return ResponseEntity.ok("{\"mensaje\":\"forzar-actualizacion invocado correctamente\"}");
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body);
     }
 
-    /**
-     * GET /api/proxy/eventos/{id}/estado-asientos
-     *
-     * Devuelve el estado de asientos de un evento leyendo el Redis REMOTO de la cátedra
-     * a través de EstadoAsientosRedisService.
-     *
-     * - Si no hay datos en Redis → devuelve DTO con lista vacía.
-     * - Si hay error de parseo → también devuelve DTO seguro (lista vacía).
-     */
-    @GetMapping("/eventos/{id}/estado-asientos")
+    @GetMapping(value = "/eventos/{id}/estado-asientos", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> obtenerEstadoAsientos(@PathVariable Long id) {
         log.info("🌐 [Proxy] GET /api/proxy/eventos/{}/estado-asientos", id);
-
         try {
             EstadoAsientosRemotoDTO dto = estadoAsientosRedisService.obtenerEstadoAsientos(id);
-
-            // dto NUNCA es null por cómo está implementado el service:
-            // siempre devuelve un objeto con lista (tal vez vacía).
             return ResponseEntity.ok(dto);
-
         } catch (Exception e) {
             log.error("🌐 [Proxy] Error consultando Redis para evento {}", id, e);
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"error\":\"Error consultando Redis para el estado de asientos\"}");
         }
     }
 
+    @GetMapping(value = "/eventos/{id}/asientos", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> obtenerAsientosEvento(@PathVariable Long id) {
+        // En tu proyecto /asientos es alias del estado en Redis remoto
+        log.info("🌐 [Proxy] GET /api/proxy/eventos/{}/asientos", id);
+        try {
+            EstadoAsientosRemotoDTO dto = estadoAsientosRedisService.obtenerEstadoAsientos(id);
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            log.error("🌐 [Proxy] Error consultando Redis (asientos) para evento {}", id, e);
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"error\":\"Error consultando Redis para asientos\"}");
+        }
+    }
 
+    @PostMapping(value = "/eventos/{id}/bloqueos", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BloquearAsientosResponseDTO> crearBloqueoEvento(
+            @PathVariable Long id,
+            @RequestBody BloquearAsientosRequestDTO request
+    ) {
+        log.info("🌐 [Proxy] POST /api/proxy/eventos/{}/bloqueos", id);
+
+        // Validación básica
+        if (request == null || request.getAsientos() == null || request.getAsientos().isEmpty()) {
+            return ResponseEntity.badRequest().build(); // el backend ya sabe interpretar 400
+        }
+
+        // Normalizamos eventoId (externalId de la cátedra)
+        if (request.getEventoId() == null) {
+            request.setEventoId(id);
+        }
+
+        // Aviso si no coincide (no bloquea la operación)
+        if (!id.equals(request.getEventoId())) {
+            log.warn("⚠️ [Proxy] Bloqueo: path id={} != body eventoId={} (se enviará body).", id, request.getEventoId());
+        }
+
+        try {
+            BloquearAsientosResponseDTO resp = catServiceClient.bloquearAsientos(request);
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            log.error("💥 [Proxy] Error al bloquear asientos en la cátedra eventoId={}", request.getEventoId(), e);
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();
+        }
+    }
+
+    @PostMapping(value = "/eventos/{id}/venta", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> crearVentaEvento(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> ventaJson
+    ) {
+        log.info("🌐 [Proxy] POST /api/proxy/eventos/{}/venta", id);
+        log.debug("🌐 [Proxy] Payload venta recibido: {}", ventaJson);
+
+        try {
+            // reenviamos tal cual
+            String respuesta = catServiceClient.realizarVenta(ventaJson);
+
+            // si hay body → lo devolvemos como JSON
+            if (respuesta != null && !respuesta.isBlank()) {
+                return ResponseEntity.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(respuesta);
+            }
+
+            // si no hay body → 200 OK sin body (válido según consigna)
+            return ResponseEntity.ok().build();
+
+        } catch (Exception e) {
+            log.error("🌐 [Proxy] Error al crear venta en la cátedra para evento {}", id, e);
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"error\":\"No se pudo crear la venta en la cátedra\"}");
+        }
+    }
 }

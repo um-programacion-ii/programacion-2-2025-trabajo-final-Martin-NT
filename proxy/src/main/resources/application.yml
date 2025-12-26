@@ -20,11 +20,12 @@ spring:
     listener:
       missing-topics-fatal: false               # Si el topic no existe todavía, no rompe la aplicación.
 
-catservice:
-  url: ${CAT_SERVICE_URL:http://192.168.194.250:8080/api}  # URL base del servidor de la cátedra. Usado para leer eventos.
-
 catedra:
   jwt-token: ${CATEDRA_JWT_TOKEN:}
+
+catservice:
+  url: ${CAT_SERVICE_URL:http://192.168.194.250:8080}  # URL base del servidor de la cátedra. Usado para leer eventos.
+
 
 logging:
   level:
@@ -38,7 +39,7 @@ logging:
     # - si llega el Bearer
     # - si falta el token
     # - qué ruta está siendo filtrada
-    ar.edu.um.proxyservice.config.ProxyTokenAuthFilter: DEBUG #INFO
+    ar.edu.um.proxyservice.config.ProxyTokenAuthFilter: DEBUG
 
     # Logs del KafkaListener (eventos recibidos).
     # INFO muestra solo los mensajes reales de Kafka, sin debug interno.
@@ -48,3 +49,5 @@ logging:
     # Lo dejamos en WARN para mostrar solo advertencias/errores reales.
     org.apache.kafka: WARN
 
+    feign: INFO
+    ar.edu.um.proxyservice.client.CatServiceFeignClient: INFO

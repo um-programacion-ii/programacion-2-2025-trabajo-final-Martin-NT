@@ -1,14 +1,11 @@
 package ar.edu.um.proxyservice.client;
 import ar.edu.um.proxyservice.config.CatServiceFeignConfig;
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import java.util.Map;
 
-/**
- * Cliente HTTP declarativo (Feign) para el servidor de la cátedra.
- *
- * Define los endpoints que expone la cátedra y usa catservice.url como base.
- */
+import ar.edu.um.proxyservice.service.dto.BloquearAsientosRequestDTO;
+import ar.edu.um.proxyservice.service.dto.BloquearAsientosResponseDTO;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.*;
 @FeignClient(
         name = "cat-service",
         url = "${catservice.url}",
@@ -16,15 +13,37 @@ import org.springframework.web.bind.annotation.PathVariable;
 )
 public interface CatServiceFeignClient {
 
-    @GetMapping("/endpoints/v1/eventos-resumidos")
+    @GetMapping("/api/endpoints/v1/eventos-resumidos")
     String listarEventosResumidos();
 
-    @GetMapping("/endpoints/v1/eventos")
+    @GetMapping("/api/endpoints/v1/eventos")
     String listarEventosCompletos();
 
-    @GetMapping("/endpoints/v1/evento/{id}")
+    @GetMapping("/api/endpoints/v1/evento/{id}")
     String obtenerEventoPorId(@PathVariable("id") Long id);
 
-    @GetMapping("/endpoints/v1/forzar-actualizacion")
+    @GetMapping("/api/endpoints/v1/forzar-actualizacion")
     String forzarActualizacion();
+
+    @PostMapping(
+            value = "/api/endpoints/v1/realizar-venta",
+            consumes = "application/json"
+    )
+    String realizarVenta(@RequestBody Map<String, Object> ventaJson);
+
+    @PostMapping(
+            value = "/api/endpoints/v1/bloquear-asientos",
+            consumes = "application/json"
+    )
+    BloquearAsientosResponseDTO bloquearAsientos(
+            @RequestBody BloquearAsientosRequestDTO body
+    );
+
+    @GetMapping("/api/endpoints/v1/listar-ventas")
+    String listarVentas();
+
+    @GetMapping("/api/endpoints/v1/listar-venta/{id}")
+    String listarVentaPorId(@PathVariable("id") Long id);
+
+
 }

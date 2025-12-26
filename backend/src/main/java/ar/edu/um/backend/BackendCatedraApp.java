@@ -1,7 +1,7 @@
 package ar.edu.um.backend;
-
 import ar.edu.um.backend.config.ApplicationProperties;
 import ar.edu.um.backend.config.CRLFLogConverter;
+import ar.edu.um.backend.config.ProxyProperties;
 import jakarta.annotation.PostConstruct;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -20,7 +20,7 @@ import tech.jhipster.config.DefaultProfileUtil;
 import tech.jhipster.config.JHipsterConstants;
 
 @SpringBootApplication
-@EnableConfigurationProperties({ LiquibaseProperties.class, ApplicationProperties.class })
+@EnableConfigurationProperties({ LiquibaseProperties.class, ApplicationProperties.class, ProxyProperties.class })
 public class BackendCatedraApp {
 
     private static final Logger LOG = LoggerFactory.getLogger(BackendCatedraApp.class);
