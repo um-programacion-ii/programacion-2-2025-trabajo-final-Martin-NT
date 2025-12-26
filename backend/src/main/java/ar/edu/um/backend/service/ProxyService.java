@@ -192,7 +192,7 @@ public class ProxyService {
         }
 
         try {
-            // 🔹 LOG 1: llamada al proxy
+            // LOG 1: llamada al proxy
             log.info("🌐 [Proxy-Backend] Llamando al proxy: GET {} (externalId={})", uri, externalId);
 
             String json = proxyWebClient
@@ -202,7 +202,7 @@ public class ProxyService {
                 .bodyToMono(String.class)
                 .block();
 
-            // 🔹 LOG 2: respuesta recibida del proxy
+            // LOG 2: respuesta recibida del proxy
             int bytes = json != null ? json.length() : 0;
             log.info(
                 "📩 [Proxy-Backend] Respuesta del proxy: GET {} (externalId={}) bytes={}",
