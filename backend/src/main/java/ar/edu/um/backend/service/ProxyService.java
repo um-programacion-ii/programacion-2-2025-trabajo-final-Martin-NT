@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-
 /**
  * Servicio de integración encargado de comunicarse con el proxy-service local.
  *
@@ -36,11 +35,7 @@ public class ProxyService {
         this.objectMapper = objectMapper;
     }
 
-    /* ============================================================
-       EVENTOS
-       ============================================================ */
-
-    /** GET /api/proxy/eventos  (Payload 4 completos) */
+    /** Llama a GET /api/proxy/eventos  (Payload 4 completos) */
     public List<ProxyEventoDetalleDTO> listarEventosCompletos() {
         try {
             return proxyWebClient
@@ -59,7 +54,7 @@ public class ProxyService {
         }
     }
 
-    /** GET /api/proxy/eventos-resumidos (Payload 3 resumidos) */
+    /** Llama a GET /api/proxy/eventos-resumidos (Payload 3 resumidos) */
     public List<ProxyEventoResumenDTO> listarEventosResumidos() {
         try {
             return proxyWebClient
@@ -78,7 +73,7 @@ public class ProxyService {
         }
     }
 
-    /** GET /api/proxy/eventos/{id} (Payload 5 detalle) */
+    /** Llama a GET /api/proxy/eventos/{id} (Payload 5 detalle) */
     public ProxyEventoDetalleDTO obtenerEventoPorId(Long externalId) {
         if (externalId == null) {
             log.warn("⚠️ [Proxy-Backend] obtenerEventoPorId llamado con externalId=null");
@@ -105,11 +100,7 @@ public class ProxyService {
         }
     }
 
-    /* ============================================================
-       ESTADO DE ASIENTOS (REDIS) / ASIENTOS
-       ============================================================ */
-
-    /** GET /api/proxy/eventos/{id}/estado-asientos  (Redis remoto) */
+    /** Llama a GET /api/proxy/eventos/{id}/estado-asientos  (Redis remoto) */
     public ProxyEstadoAsientosResponse listarEstadoAsientosRedis(Long externalId) {
         if (externalId == null) {
             log.warn("⚠️ [Proxy-Backend] estado-asientos llamado con externalId=null");
@@ -118,7 +109,7 @@ public class ProxyService {
         return getAsientosWrapper("/eventos/" + externalId + "/estado-asientos", externalId, "estado-asientos");
     }
 
-    /** GET /api/proxy/eventos/{id}/asientos (asientos del evento desde cátedra/proxy) */
+    /** Llama a GET /api/proxy/eventos/{id}/asientos (asientos del evento desde cátedra/proxy) */
     public ProxyEstadoAsientosResponse listarAsientosDeEvento(Long externalId) {
         if (externalId == null) {
             log.warn("⚠️ [Proxy-Backend] asientos llamado con externalId=null");
@@ -127,25 +118,98 @@ public class ProxyService {
         return getAsientosWrapper("/eventos/" + externalId + "/asientos", externalId, "asientos");
     }
 
+    /** Llama a  POST /api/proxy/eventos/{externalId}/bloqueos (bloqueo real en Redis cátedra) */
+    public AsientoBloqueoResponseDTO crearBloqueoEnProxy(AsientoBloqueoRequestDTO dto) {
+        if (dto == null || dto.getEventoId() == null) {
+            log.warn("⚠️ [Proxy-Backend] crearBloqueoEnProxy llamado con dto/eventoId nulo");
+            return null;
+        }
+
+        try {
+            log.info(
+                "🔒 [Proxy-Backend] Enviando bloqueo al proxy: eventoId={}, asientos={}",
+                dto.getEventoId(),
+                dto.getAsientos() != null ? dto.getAsientos().size() : 0
+            );
+
+            return proxyWebClient
+                .post()
+                .uri("/eventos/" + dto.getEventoId() + "/bloqueos")
+                .bodyValue(dto)
+                .retrieve()
+                .bodyToMono(AsientoBloqueoResponseDTO.class)
+                .block();
+
+        } catch (WebClientResponseException e) {
+            log.error("❌ [Proxy-Backend] Error HTTP bloqueando asientos (eventoId={}) -> {}", dto.getEventoId(), e.getResponseBodyAsString(), e);
+            return null;
+        } catch (Exception e) {
+            log.error("💥 [Proxy-Backend] Error inesperado bloqueando asientos (eventoId={})", dto.getEventoId(), e);
+            return null;
+        }
+    }
+
+    /** Llama a POST /api/proxy/eventos/{externalId}/venta */
+    public ProxyVentaResponseDTO crearVentaEnProxy(Long externalId, ProxyVentaRequestDTO ventaRequest) {
+        if (externalId == null) {
+            log.warn("⚠️ [Proxy-Backend] crearVentaEnProxy llamado con externalId=null");
+            return null;
+        }
+
+        try {
+            log.info(
+                "💸 [Proxy-Backend] Enviando venta al proxy: externalId={}, asientos={}",
+                externalId,
+                ventaRequest != null && ventaRequest.getAsientos() != null ? ventaRequest.getAsientos().size() : 0
+            );
+
+            return proxyWebClient
+                .post()
+                .uri("/eventos/" + externalId + "/venta")
+                .bodyValue(ventaRequest)
+                .retrieve()
+                .bodyToMono(ProxyVentaResponseDTO.class)
+                .block();
+
+        } catch (WebClientResponseException e) {
+            log.error("❌ [Proxy-Backend] Error creando venta en proxy (externalId={}) -> {}", externalId, e.getResponseBodyAsString(), e);
+            return null;
+        } catch (Exception e) {
+            log.error("💥 [Proxy-Backend] Error inesperado creando venta en proxy (externalId={})", externalId, e);
+            return null;
+        }
+    }
+
     /**
      * Helper común: llama a endpoint que puede devolver:
      * - wrapper: { "eventoId": X, "asientos": [ ... ] }
      * - lista directa: [ {fila, columna, estado, expira, personaActual, ...}, ... ]
      */
     private ProxyEstadoAsientosResponse getAsientosWrapper(String uri, Long externalId, String tag) {
-        // Nota: externalId ya viene validado por los métodos públicos, pero lo dejamos por seguridad.
         if (externalId == null) {
             log.warn("⚠️ [Proxy-Backend] {} llamado con externalId=null (uri={})", tag, uri);
             return null;
         }
 
         try {
+            // 🔹 LOG 1: llamada al proxy
+            log.info("🌐 [Proxy-Backend] Llamando al proxy: GET {} (externalId={})", uri, externalId);
+
             String json = proxyWebClient
                 .get()
                 .uri(uri)
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
+
+            // 🔹 LOG 2: respuesta recibida del proxy
+            int bytes = json != null ? json.length() : 0;
+            log.info(
+                "📩 [Proxy-Backend] Respuesta del proxy: GET {} (externalId={}) bytes={}",
+                uri,
+                externalId,
+                bytes
+            );
 
             if (json == null || json.isBlank()) {
                 log.warn("⚠️ [Proxy-Backend] {} devolvió body vacío externalId={}", tag, externalId);
@@ -160,7 +224,6 @@ public class ProxyService {
                     if (wrapper.getEventoId() == null) {
                         wrapper.setEventoId(externalId);
                     }
-                    // Normalizamos asientos null -> lista vacía (evita NPEs aguas abajo)
                     if (wrapper.getAsientos() == null) {
                         wrapper.setAsientos(Collections.emptyList());
                     }
@@ -192,74 +255,5 @@ public class ProxyService {
             return null;
         }
     }
-
-    /* ============================================================
-       BLOQUEO DE ASIENTOS
-       ============================================================ */
-
-    /** POST /api/proxy/eventos/{externalId}/bloqueos (bloqueo real en Redis cátedra) */
-    public AsientoBloqueoResponseDTO crearBloqueoEnProxy(AsientoBloqueoRequestDTO dto) {
-        if (dto == null || dto.getEventoId() == null) {
-            log.warn("⚠️ [Proxy-Backend] crearBloqueoEnProxy llamado con dto/eventoId nulo");
-            return null;
-        }
-
-        try {
-            log.info(
-                "🔒 [Proxy-Backend] Enviando bloqueo al proxy: eventoId={}, asientos={}",
-                dto.getEventoId(),
-                dto.getAsientos() != null ? dto.getAsientos().size() : 0
-            );
-
-            return proxyWebClient
-                .post()
-                .uri("/eventos/" + dto.getEventoId() + "/bloqueos")
-                .bodyValue(dto)
-                .retrieve()
-                .bodyToMono(AsientoBloqueoResponseDTO.class)
-                .block();
-
-        } catch (WebClientResponseException e) {
-            log.error("❌ [Proxy-Backend] Error HTTP bloqueando asientos (eventoId={}) -> {}", dto.getEventoId(), e.getResponseBodyAsString(), e);
-            return null;
-        } catch (Exception e) {
-            log.error("💥 [Proxy-Backend] Error inesperado bloqueando asientos (eventoId={})", dto.getEventoId(), e);
-            return null;
-        }
-    }
-
-    /* ============================================================
-       VENTAS
-       ============================================================ */
-
-    /** POST /api/proxy/eventos/{externalId}/venta */
-    public ProxyVentaResponseDTO crearVentaEnProxy(Long externalId, ProxyVentaRequestDTO ventaRequest) {
-        if (externalId == null) {
-            log.warn("⚠️ [Proxy-Backend] crearVentaEnProxy llamado con externalId=null");
-            return null;
-        }
-
-        try {
-            log.info(
-                "💸 [Proxy-Backend] Enviando venta al proxy: externalId={}, asientos={}",
-                externalId,
-                ventaRequest != null && ventaRequest.getAsientos() != null ? ventaRequest.getAsientos().size() : 0
-            );
-
-            return proxyWebClient
-                .post()
-                .uri("/eventos/" + externalId + "/venta")
-                .bodyValue(ventaRequest)
-                .retrieve()
-                .bodyToMono(ProxyVentaResponseDTO.class)
-                .block();
-
-        } catch (WebClientResponseException e) {
-            log.error("❌ [Proxy-Backend] Error creando venta en proxy (externalId={}) -> {}", externalId, e.getResponseBodyAsString(), e);
-            return null;
-        } catch (Exception e) {
-            log.error("💥 [Proxy-Backend] Error inesperado creando venta en proxy (externalId={})", externalId, e);
-            return null;
-        }
-    }
 }
+

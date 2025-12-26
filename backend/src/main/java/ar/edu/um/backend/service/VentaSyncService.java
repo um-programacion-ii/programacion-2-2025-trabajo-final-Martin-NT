@@ -24,28 +24,46 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 /**
- * Servicio de negocio para realizar ventas sincronizadas con la cátedra (vía proxy).
+ * Servicio encargado de procesar una venta real de entradas para un evento.
  *
- * Reglas del enunciado (Payload 7):
- * - La venta falla si se intenta vender un asiento "Libre" (no reservado/bloqueado)
- *   o "Ocupado" (ya vendido).
- * - La venta OK deja los asientos en estado "Vendido" (en la cátedra).
+ * RESPONSABILIDAD GENERAL
+ * Este servicio coordina la venta de entradas entre:
+ *  - El estado REAL de los asientos (Redis / Proxy / Cátedra)
+ *  - La validación de reglas de negocio locales
+ *  - La persistencia final de la venta y los asientos vendidos en la BD local
  *
- * Estrategia local:
- * 1) Validar evento activo y con externalId.
- * 2) Validar que todos los asientos estén BLOQUEADO_VIGENTE (según AsientoEstadoService).
- * 3) Construir ProxyVentaRequestDTO (eventoId externo + fecha + precioVenta + asientos con persona).
- * 4) Enviar al proxy y recibir ProxyVentaResponseDTO.
- * 5) Si resultado=true: persistir Venta + marcar asientos como VENDIDO en DB local.
- * 6) Si resultado=false: NO persistir venta y devolver error de negocio.
+ * USO DE IDs
+ * - idLocal:
+ *     Es el ID del evento en la base de datos local del alumno.
+ *     Se usa para:
+ *       - Consultar entidades JPA (Evento, Asiento, Venta)
+ *       - Construir el mapa de asientos local
+ *       - Persistir ventas y marcar asientos como VENDIDO
+ *
+ * - externalId:
+ *     Es el ID del evento en el sistema de la cátedra.
+ *     Se usa para:
+ *       - Consultar estados de asientos vía Proxy (Redis)
+ *       - Enviar la venta real a la cátedra (Payload 7)
+ *
+ * FLUJO GENERAL DE VENTA
+ * ------------------------------------------------------------
+ * 1) El frontend envía una solicitud de venta usando externalId.
+ * 2) El controller resuelve el evento local y delega a este servicio.
+ * 3) El service valida:
+ *      - Evento activo
+ *      - Evento sincronizado (externalId presente)
+ *      - Asientos BLOQUEADO_VIGENTE en Redis
+ * 4) Se confirma la venta contra la cátedra vía Proxy.
+ * 5) Si la cátedra confirma:
+ *      - Se persiste la venta local
+ *      - Se marcan los asientos como VENDIDO en la BD local
  */
 @Service
 @Transactional
 public class VentaSyncService {
     private static final Logger log = LoggerFactory.getLogger(VentaSyncService.class);
-
     private final EventoRepository eventoRepository;
     private final AsientoRepository asientoRepository;
     private final VentaRepository ventaRepository;
@@ -69,27 +87,36 @@ public class VentaSyncService {
     /**
      * Procesa una venta solicitada por el frontend.
      *
-     * @param request incluye eventoIdLocal y asientos (fila/columna/persona).
-     * @return Venta persistida localmente si la cátedra confirmó la venta.
+     * IMPORTANTE:
+     * - request.getEventoId() contiene el idLocal del evento (resuelto previamente por el controller).
+     * - El externalId se obtiene desde la entidad Evento para comunicarse con la cátedra.
+     *
+     * Devuelve siempre el Payload 7 (ProxyVentaResponseDTO):
+     * - resultado = true  → venta confirmada por la cátedra
+     * - resultado = false → venta rechazada (bloqueos, reglas, etc.)
      */
-    public Venta procesarVenta(VentaRequestFrontendDTO request) {
-        if (request == null) {
-            throw new IllegalArgumentException("Body requerido.");
-        }
-        if (request.getEventoIdLocal() == null) {
-            throw new IllegalArgumentException("eventoIdLocal requerido.");
-        }
+    public ProxyVentaResponseDTO procesarVenta(VentaRequestFrontendDTO request) {
+
+        if (request == null) throw new IllegalArgumentException("Body requerido.");
+        if (request.getEventoId() == null) throw new IllegalArgumentException("eventoIdLocal requerido.");
         if (request.getAsientos() == null || request.getAsientos().isEmpty()) {
             throw new IllegalArgumentException("La venta debe incluir al menos un asiento.");
         }
 
-        Long eventoIdLocal = request.getEventoIdLocal();
-        log.info("💸 [Sync-Venta] Iniciando venta para eventoIdLocal={} asientos={}", eventoIdLocal, request.getAsientos().size());
+        // eventoIdLocal (NO externalId)
+        Long eventoIdLocal = request.getEventoId(); // 1051
 
-        // 1) Validar evento
-        Evento evento = eventoRepository
-            .findById(eventoIdLocal)
-            .orElseThrow(() -> new IllegalArgumentException("Evento no encontrado idLocal=" + eventoIdLocal));
+        log.info(
+            "💸 [Sync-Venta] Iniciando venta eventoIdLocal={} asientos={}",
+            eventoIdLocal,
+            request.getAsientos().size()
+        );
+
+        // 1) Validar evento local
+        Evento evento = eventoRepository.findById(eventoIdLocal)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Evento no encontrado idLocal=" + eventoIdLocal
+            ));
 
         if (Boolean.FALSE.equals(evento.getActivo())) {
             log.warn("⛔ [Sync-Venta] Venta sobre evento inactivo idLocal={}", eventoIdLocal);
@@ -97,12 +124,18 @@ public class VentaSyncService {
         }
 
         if (evento.getExternalId() == null) {
-            log.warn("⛔ [Sync-Venta] Evento idLocal={} sin externalId. No se puede vender contra cátedra.", eventoIdLocal);
-            throw new IllegalStateException("El evento no tiene externalId (id cátedra), no se puede vender.");
+            log.warn(
+                "⛔ [Sync-Venta] Evento idLocal={} sin externalId. No se puede vender contra cátedra.",
+                eventoIdLocal
+            );
+            throw new IllegalStateException(
+                "El evento no tiene externalId (id cátedra), no se puede vender."
+            );
         }
 
-        // 2) Obtener estados en tiempo real (DB + Redis)
-        List<AsientoEstadoDTO> estados = asientoEstadoService.obtenerEstadoActualDeAsientos(eventoIdLocal);
+        // 2) Obtener estados en tiempo real (Redis vía proxy)
+        List<AsientoEstadoDTO> estados =
+            asientoEstadoService.obtenerEstadoActualDeAsientos(eventoIdLocal);
 
         Map<String, AsientoEstadoDTO> mapaEstado = new HashMap<>();
         for (AsientoEstadoDTO dto : estados) {
@@ -111,10 +144,11 @@ public class VentaSyncService {
             }
         }
 
-        // 3) Validar asientos y cargar entidades Asiento locales
+        // 3) Validar asientos solicitados
         List<Asiento> asientosPersistidos = new ArrayList<>();
 
         for (VentaAsientoFrontendDTO asientoReq : request.getAsientos()) {
+
             if (asientoReq == null || asientoReq.getFila() == null || asientoReq.getColumna() == null) {
                 throw new IllegalArgumentException("Cada asiento debe incluir fila y columna.");
             }
@@ -129,93 +163,98 @@ public class VentaSyncService {
             AsientoEstadoDTO estadoDto = mapaEstado.get(key);
 
             if (estadoDto == null) {
-                log.warn("⛔ [Sync-Venta] Asiento ({},{}) no existe en mapa estado eventoIdLocal={}", asientoReq.getFila(), asientoReq.getColumna(), eventoIdLocal);
-                throw new IllegalStateException("Asiento (" + asientoReq.getFila() + "," + asientoReq.getColumna() + ") no es válido para este evento.");
+                throw new IllegalStateException(
+                    "Asiento (" + asientoReq.getFila() + "," + asientoReq.getColumna() + ") no válido para el evento."
+                );
             }
 
-            String estado = estadoDto.getEstado(); // LIBRE / BLOQUEADO_VIGENTE / BLOQUEADO_EXPIRADO / VENDIDO
+            String estado = estadoDto.getEstado();
 
             if ("VENDIDO".equalsIgnoreCase(estado)) {
-                log.warn("⛔ [Sync-Venta] Asiento ({},{}) ya vendido. Rechazando.", asientoReq.getFila(), asientoReq.getColumna());
-                throw new IllegalStateException("Asiento (" + asientoReq.getFila() + "," + asientoReq.getColumna() + ") ya está vendido.");
+                throw new IllegalStateException(
+                    "Asiento (" + asientoReq.getFila() + "," + asientoReq.getColumna() + ") ya está vendido."
+                );
             }
 
             if (!"BLOQUEADO_VIGENTE".equalsIgnoreCase(estado)) {
-                log.warn("⛔ [Sync-Venta] Asiento ({},{}) no está BLOQUEADO_VIGENTE (estado={}). Rechazando.", asientoReq.getFila(), asientoReq.getColumna(), estado);
-                throw new IllegalStateException("Asiento (" + asientoReq.getFila() + "," + asientoReq.getColumna() + ") no está bloqueado vigente. Estado actual: " + estado);
+                throw new IllegalStateException(
+                    "Asiento (" + asientoReq.getFila() + "," + asientoReq.getColumna() +
+                        ") no está bloqueado vigente. Estado actual: " + estado
+                );
             }
 
             Asiento asiento = asientoRepository
                 .findByEventoIdAndFilaAndColumna(eventoIdLocal, asientoReq.getFila(), asientoReq.getColumna())
-                .orElseThrow(() -> new IllegalStateException("Asiento persistido no encontrado eventoIdLocal=" + eventoIdLocal + " fila=" + asientoReq.getFila() + " col=" + asientoReq.getColumna()));
+                .orElseThrow(() -> new IllegalStateException(
+                    "Asiento persistido no encontrado (eventoIdLocal=" + eventoIdLocal + ")"
+                ));
 
             asientosPersistidos.add(asiento);
         }
 
-        int cantidadAsientos = request.getAsientos().size();
+        // 4) Calcular total
+        int cantidadAsientos = asientosPersistidos.size();
+        BigDecimal total = evento.getPrecioEntrada()
+            .multiply(BigDecimal.valueOf(cantidadAsientos));
 
-        // 4) Calcular precio total (no confiar en request.getPrecioVenta())
-        BigDecimal precioEntrada = evento.getPrecioEntrada();
-        BigDecimal total = (precioEntrada != null)
-            ? precioEntrada.multiply(BigDecimal.valueOf(cantidadAsientos))
-            : BigDecimal.ZERO;
-
-        // 5) Construir request para proxy/cátedra (Payload 7 entrada)
+        // 5) Construir request para la cátedra (externalId)
         ProxyVentaRequestDTO requestProxy = new ProxyVentaRequestDTO();
         requestProxy.setEventoId(evento.getExternalId());
         requestProxy.setFecha(Instant.now());
         requestProxy.setPrecioVenta(total);
-        requestProxy.setAsientos(request.getAsientos()); // coincide con payload (fila/columna/persona)
+        requestProxy.setAsientos(request.getAsientos());
 
-        log.info("💸 [Sync-Venta] Enviando venta al proxy: eventoIdLocal={} externalId={} asientos={} total={}",
-            eventoIdLocal, evento.getExternalId(), cantidadAsientos, total
+        log.info(
+            "💸 [Sync-Venta] Enviando venta al proxy eventoIdLocal={} externalId={} total={}",
+            eventoIdLocal,
+            evento.getExternalId(),
+            total
         );
 
-        // 6) Llamar a proxy
-        ProxyVentaResponseDTO resp = proxyService.crearVentaEnProxy(evento.getExternalId(), requestProxy);
+        // 6) Confirmar venta con la cátedra
+        ProxyVentaResponseDTO resp =
+            proxyService.crearVentaEnProxy(evento.getExternalId(), requestProxy);
 
         if (resp == null) {
-            log.error("❌ [Sync-Venta] Respuesta nula desde proxy (integración).");
-            throw new IllegalStateException("No se pudo confirmar la venta con la cátedra (respuesta nula).");
+            throw new IllegalStateException(
+                "No se pudo confirmar la venta con la cátedra (respuesta nula)."
+            );
         }
 
-        // 7) Interpretar respuesta (Payload 7 salida)
         if (Boolean.FALSE.equals(resp.getResultado())) {
-            String motivo = (resp.getDescripcion() != null) ? resp.getDescripcion() : "Venta rechazada por la cátedra.";
-            log.warn("⛔ [Sync-Venta] Venta rechazada por cátedra: {}", motivo);
-            throw new IllegalStateException(motivo);
+            log.warn("⛔ [Sync-Venta] Venta rechazada por cátedra: {}", resp.getDescripcion());
+            return resp;
         }
 
-        log.info("✅ [Sync-Venta] Venta confirmada por cátedra: ventaId={} descripcion={}", resp.getVentaId(), resp.getDescripcion());
-
-        // 8) Persistir venta local + marcar asientos vendidos
+        // 7) Persistir venta local
         Venta venta = new Venta();
-        venta.setExternalId(resp.getVentaId()); // puede venir null si cátedra lo permite, pero en payload OK suele venir
+        venta.setExternalId(resp.getVentaId());
         venta.setEstado(VentaEstado.CONFIRMADA);
-
-        if (resp.getFechaVenta() != null) {
-            venta.setFechaVenta(resp.getFechaVenta().atZone(ZoneId.systemDefault()).toLocalDate());
-        } else {
-            venta.setFechaVenta(LocalDate.now());
-        }
-
-        venta.setDescripcion(resp.getDescripcion() != null ? resp.getDescripcion() : "Venta realizada con éxito");
-        venta.setPrecioVenta(resp.getPrecioVenta() != null ? resp.getPrecioVenta() : total);
+        venta.setFechaVenta(
+            resp.getFechaVenta() != null
+                ? resp.getFechaVenta().atZone(ZoneId.systemDefault()).toLocalDate()
+                : LocalDate.now()
+        );
+        venta.setDescripcion(resp.getDescripcion());
+        venta.setPrecioVenta(resp.getPrecioVenta());
         venta.setCantidadAsientos(cantidadAsientos);
         venta.setEvento(evento);
         venta.getAsientos().addAll(asientosPersistidos);
 
-        Venta guardada = ventaRepository.save(venta);
+        ventaRepository.save(venta);
 
-        for (Asiento asiento : asientosPersistidos) {
-            asiento.setEstado(AsientoEstado.VENDIDO);
+        for (Asiento a : asientosPersistidos) {
+            a.setEstado(AsientoEstado.VENDIDO);
         }
         asientoRepository.saveAll(asientosPersistidos);
 
-        log.info("💾 [Sync-Venta] Venta guardada idLocal={} externalId={} asientos={} -> asientos marcados VENDIDO",
-            guardada.getId(), guardada.getExternalId(), cantidadAsientos
+        log.info(
+            "💾 [Sync-Venta] Venta persistida idLocal={} externalId={} asientos={}",
+            venta.getId(),
+            venta.getExternalId(),
+            cantidadAsientos
         );
 
-        return guardada;
+        return resp;
     }
 }

@@ -113,7 +113,7 @@ public class EstadoAsientosRedisService {
         DataType type = stringRedisTemplate.type(key);
 
         if (type == null || type == DataType.NONE) {
-            log.info("[Redis] No hay estado de asientos en Redis para eventoId={} (key {}) TYPE QUE LLEGO {}.", eventoId, key, type);
+            log.info("[Redis] No hay estado de asientos en Redis para eventoId={} (key {}) type:({}).", eventoId, key, type);
             return dtoVacio(eventoId);
         }
 
