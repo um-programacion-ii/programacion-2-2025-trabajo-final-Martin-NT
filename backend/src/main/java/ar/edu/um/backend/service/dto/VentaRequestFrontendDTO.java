@@ -1,7 +1,6 @@
 package ar.edu.um.backend.service.dto;
 import lombok.*;
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -14,7 +13,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class VentaRequestFrontendDTO implements Serializable {
-    private Long eventoIdLocal; // id local (DB)
-    private BigDecimal precioVenta; // precio total
+    private Long eventoId; // id local (DB)
     private List<VentaAsientoFrontendDTO> asientos;
 }
