@@ -1,0 +1,1432 @@
+{
+	"info": {
+		"_postman_id": "5ac98898-bb92-40e1-b15a-3344d8178e72",
+		"name": "TP Final Programacion2",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "50027414",
+		"_collection_link": "https://mt-navarro1503-84787.postman.co/workspace/Martin-Navarro-Teixidor's-Works~3de860b5-e74c-4aad-8ff8-1b62b62bcdac/collection/50027414-5ac98898-bb92-40e1-b15a-3344d8178e72?action=share&source=collection_link&creator=50027414"
+	},
+	"item": [
+		{
+			"name": "Backend",
+			"item": [
+				{
+					"name": "Autenticación y Sesiones",
+					"item": [
+						{
+							"name": "login-backend-obtener-jwt-admin",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/authenticate",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"authenticate"
+									]
+								},
+								"description": "**Este token es generado por mi backend local** y lo usa el backend para pasar el filtro `ProxyTokenAuthFilter` del proxy."
+							},
+							"response": []
+						},
+						{
+							"name": "1-login-obtencion-token",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"user\",\n    \"password\": \"user\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/authenticate",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"authenticate"
+									]
+								},
+								"description": "Los token que devuelvan sirve para las pruebas de Postman, no debe usarse para llamar a la cátedra"
+							},
+							"response": []
+						},
+						{
+							"name": "2-guardar-estado-redis",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxNzY2MDY0ODE4LCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzYzNDcyODE4LCJ1c2VySWQiOjJ9.sKzZjd2WOy3Z2Nb4CquROkdmf8A7acHgdzAK9ufzUlNb2yuw33lVfuUj7SY9JxlhJhJLGVtk9foj04wK9L8dYA",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{ \n    \"eventoId\": 555 \n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/session/evento",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"session",
+										"evento"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "3-recuperar-estado-redis",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxNzY2MDY0ODE4LCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzYzNDcyODE4LCJ1c2VySWQiOjJ9.sKzZjd2WOy3Z2Nb4CquROkdmf8A7acHgdzAK9ufzUlNb2yuw33lVfuUj7SY9JxlhJhJLGVtk9foj04wK9L8dYA",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"eventoId\": 555\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/session/evento",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"session",
+										"evento"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"description": "### 🔹 Backend / Autenticación y Sesiones\n\n**1-loggin-obtencion-token y login-backend-obtener-jwt**\n\n- **Método:** `POST`\n    \n- **URL:** `{{backend_url}}/authenticate`\n    \n- **Función:** hace login en **tu backend**, enviando usuario/contraseña y devolviendo un **JWT**.\n    \n- **Uso:** copiar el token y usarlo en `Authorization: Bearer` en todos los otros requests al backend.\n    \n\n**2-guardar-estado-redis**\n\n- **Método:** `POST`\n    \n- **URL:** `{{backend_url}}/session/evento`\n    \n- **Función:** guarda un valor en la **sesión HTTP**, que está persistida en **Redis** (Etapa sesiones).\n    \n- **Uso:** probar que la sesión se guarda en Redis y sobrevive a reinicios del backend.\n    \n\n**3-recuperar-estado-redis**\n\n- **Método:** `GET`\n    \n- **URL:** `{{backend_url}}/session/evento`\n    \n- **Función:** lee el valor que se había guardado en la sesión.\n    \n- **Uso:** verificar persistencia y TTL de la sesión en Redis.\n    \n\n> &lt;p &gt;&lt;/p&gt;"
+				},
+				{
+					"name": "Notificaciones Proxy",
+					"item": [
+						{
+							"name": "proxy-notificacion-evento",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTY5MzUzNywiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1MjkzNTM3LCJ1c2VySWQiOjF9._WgQhSBh2KhY5Z8Oor2mKiGT6KB45o4-L0loShlxTeLrJEjqip-LMep8Co31OX3Gia8nRtXaXIAxoaqWUSVaYg",
+										"type": "text"
+									},
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"eventoId\": 123,\n  \"origen\": \"postman-test\"\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/proxy/notificacion-evento",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"proxy",
+										"notificacion-evento"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"description": "### 🔹 Backend / Notificaciones Proxy\n\n**proxy-notificacion-evento**\n\n- **Método:** `POST`\n    \n- **URL:** `{{backend_url}}/proxy/notificacion-evento`\n    \n- **Función:** endpoint que **simula** lo que haría el proxy cuando detecta un cambio por Kafka:\n    \n    - recibe una notificación de cambio de evento\n        \n    - y puede disparar una sincronización específica.\n        \n- **Uso:** desde Postman vos jugás a ser el proxy y probás que el backend responde bien."
+				},
+				{
+					"name": "Eventos",
+					"item": [
+						{
+							"name": "sync-eventos",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxODUyNTUzNjUxLCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY2MTUzNjUxLCJ1c2VySWQiOjJ9.fjaCuvw-y1QWb-lsoe3JGzdksko41zRwTSPc2Cs6buMwNet8sNfMtCvoqZ9tHS599Ao12bo06n1OAehgPdMYQw",
+										"description": "token del user",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/eventos/sync-eventos",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"eventos",
+										"sync-eventos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "listar-eventos-completos",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTgxMjQ3MSwiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1NDEyNDcxLCJ1c2VySWQiOjF9.jSQOX8VfbRrZafMtpEcQGphm1TsN2HSHzccs-9cpWijkvaZS-ndSX3XH62o-PpLhWCrsECvJKL72Wvu6PaIW6Q",
+										"description": "token de user ",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8080/api/eventos/completos",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"eventos",
+										"completos"
+									]
+								},
+								"description": "Lista eventos **persistidos en tu DB**."
+							},
+							"response": []
+						},
+						{
+							"name": "listar-eventos-resumidos",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTgxMjQ3MSwiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1NDEyNDcxLCJ1c2VySWQiOjF9.jSQOX8VfbRrZafMtpEcQGphm1TsN2HSHzccs-9cpWijkvaZS-ndSX3XH62o-PpLhWCrsECvJKL72Wvu6PaIW6Q",
+										"description": "token de user ",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8080/api/eventos/resumidos",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"eventos",
+										"resumidos"
+									]
+								},
+								"description": "Lista eventos **persistidos en tu DB**."
+							},
+							"response": []
+						},
+						{
+							"name": "buscar-evento",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTgxMjQ3MSwiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1NDEyNDcxLCJ1c2VySWQiOjF9.jSQOX8VfbRrZafMtpEcQGphm1TsN2HSHzccs-9cpWijkvaZS-ndSX3XH62o-PpLhWCrsECvJKL72Wvu6PaIW6Q",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8080/api/eventos/4",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"eventos",
+										"4"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "listar-eventos-locales",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTgxMjQ3MSwiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1NDEyNDcxLCJ1c2VySWQiOjF9.jSQOX8VfbRrZafMtpEcQGphm1TsN2HSHzccs-9cpWijkvaZS-ndSX3XH62o-PpLhWCrsECvJKL72Wvu6PaIW6Q",
+										"description": "token de user ",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8080/api/eventos",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"eventos"
+									]
+								},
+								"description": "Lista eventos **persistidos en tu DB**."
+							},
+							"response": []
+						},
+						{
+							"name": "buscar-evento-local",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTgxMjQ3MSwiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1NDEyNDcxLCJ1c2VySWQiOjF9.jSQOX8VfbRrZafMtpEcQGphm1TsN2HSHzccs-9cpWijkvaZS-ndSX3XH62o-PpLhWCrsECvJKL72Wvu6PaIW6Q",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8080/api/eventos/1052",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"eventos",
+										"1052"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"description": "# 🔹 **Backend / Eventos Locales**\n\n**Nombre:** eventos-locales  \n**Método:** GET  \n**URL:** {{backend_url}}/api/eventos\n\n**Función:**\n\nLista **todos los eventos guardados en tu propia BD local** después de sincronizar.\n\nIncluye:\n\n- título\n    \n- fecha/hora\n    \n- organizador\n    \n- filas/columnas de asientos\n    \n- cantidad total de asientos\n    \n- si está activo o inactivo\n    \n\n**Uso en pruebas:**\n\n- Confirmar qué eventos están persistidos.\n    \n- Ver si se crearon o actualizaron correctamente luego del `admin/sync-eventos`.\n    \n- Mostrar al profesor cómo tu BD refleja lo que viene de la cátedra."
+				},
+				{
+					"name": "Asientos",
+					"item": [
+						{
+							"name": "estado-asientos-tiempo-real",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxODUyMzIwMDYxLCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY1OTIwMDYxLCJ1c2VySWQiOjJ9.r_0ZkgnLl4IW9FsxZ1HNHUFNXRV_uJuEy3QSda9BnSxqPaal21Bu72zdsWHYbz52GUP_rDHuZ5N33m5gnB0oYQ",
+										"description": "token user",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8080/api/eventos/3/asientos",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"eventos",
+										"3",
+										"asientos"
+									]
+								},
+								"description": "Devuelve estado de asientos del evento."
+							},
+							"response": []
+						},
+						{
+							"name": "bloquear-asiento",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJ0aW5fbnQiLCJleHAiOjE4NTI1NTE1MTMsImF1dGgiOiJST0xFX1VTRVIiLCJpYXQiOjE3NjYxNTE1MTN9.s9wk7n5zKGSYEWoN3pK903mWlxXv318Jjangiy_eNcIFG4d1W-lQ2C3MR8uEEYUVSUEmkd-qsdO-KTcuwh_P7A",
+										"description": "token catedra martin:_nt",
+										"type": "text",
+										"disabled": true
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxODUyNTU3OTk1LCJhdXRoIjoiIiwiaWF0IjoxNzY2MTU3OTk1fQ.RpXFRSbHYXVYmqhng642W_t-QsiS0sqjIlzQE0CL4hSENGzWYYo30NkCuAMxR6_F4HGO_VmvJhz6oDuA3sfjaQ",
+										"description": "token user P2",
+										"type": "text",
+										"disabled": true
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxODUyNTUzNjUxLCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY2MTUzNjUxLCJ1c2VySWQiOjJ9.fjaCuvw-y1QWb-lsoe3JGzdksko41zRwTSPc2Cs6buMwNet8sNfMtCvoqZ9tHS599Ao12bo06n1OAehgPdMYQw",
+										"description": "token user login backend",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"eventoId\": 3,\n    \"asientos\": [\n    {\n        \"fila\": 7,\n        \"columna\": 3\n    }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/eventos/3/bloqueos",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"eventos",
+										"3",
+										"bloqueos"
+									]
+								},
+								"description": "Probar con:\n\n- Asiento Libre: 200 OK\n    \n- Asiento Vendido: 400 BAD_REQUEST\n    \n- Asiento Bloqueado Vigente: 400 BAD_REQUEST\n    \n- Asiento expirado (esperar 5 min): 200 OK"
+							},
+							"response": []
+						},
+						{
+							"name": "bloquear-asiento-invalido",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTgxMjQ3MSwiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1NDEyNDcxLCJ1c2VySWQiOjF9.jSQOX8VfbRrZafMtpEcQGphm1TsN2HSHzccs-9cpWijkvaZS-ndSX3XH62o-PpLhWCrsECvJKL72Wvu6PaIW6Q",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"eventoId\": 1,\n    \"asientos\": [\n    {\n        \"fila\": 0,\n        \"columna\": 4\n    }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/eventos/1052/bloqueos",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"eventos",
+										"1052",
+										"bloqueos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "bloquear-asiento-fuera-rango",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTgxMjQ3MSwiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1NDEyNDcxLCJ1c2VySWQiOjF9.jSQOX8VfbRrZafMtpEcQGphm1TsN2HSHzccs-9cpWijkvaZS-ndSX3XH62o-PpLhWCrsECvJKL72Wvu6PaIW6Q",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"eventoId\": 1,\n    \"asientos\": [\n    {\n        \"fila\": 99,\n        \"columna\": 99\n    }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/eventos/1052/bloqueos",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"eventos",
+										"1052",
+										"bloqueos"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Ventas",
+					"item": [
+						{
+							"name": "realizar-venta",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTgxMjQ3MSwiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1NDEyNDcxLCJ1c2VySWQiOjF9.jSQOX8VfbRrZafMtpEcQGphm1TsN2HSHzccs-9cpWijkvaZS-ndSX3XH62o-PpLhWCrsECvJKL72Wvu6PaIW6Q",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"eventoId\": 3,\n  \"asientos\": [\n    {\n      \"fila\": 7,\n      \"columna\": 3,\n      \"persona\": \"Martin Navarro\"\n    }\n  ]\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/ventas/eventos/3/venta",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"ventas",
+										"eventos",
+										"3",
+										"venta"
+									]
+								},
+								"description": "Probar con:\n\n- Asiento No Bloqueado: 400 BAD_REQUEST\n    \n- Bloqueo Vigente: 200 OK\n    \n- Asiento Vendido: 400 BAD_REQUEST\n    \n- Bloqueo expirado: Venta rechazada (400 BAD_REQUEST)"
+							},
+							"response": []
+						},
+						{
+							"name": "rechazo-asiento-fuera-de-rango",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MjIwMjk5MiwiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1ODAyOTkyLCJ1c2VySWQiOjF9.ByuWUdNdisqztfrUI_F7kFk7ZrhuqoQK4cD_x46KAF_7DGTGDHiEc9gdDjbqsBEzckwNXHQA6sw3JDjmQPKMig",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"eventoId\": 2,\n  \"precioVenta\": 5230.00,\n  \"asientos\": [\n    {\n      \"fila\": 99,\n      \"columna\": 99,\n      \"persona\": \"Martin Navarro\"\n    }\n  ]\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/ventas/eventos/1052/venta",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"ventas",
+										"eventos",
+										"1052",
+										"venta"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "listar-ventas-locales",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTgxMjQ3MSwiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1NDEyNDcxLCJ1c2VySWQiOjF9.jSQOX8VfbRrZafMtpEcQGphm1TsN2HSHzccs-9cpWijkvaZS-ndSX3XH62o-PpLhWCrsECvJKL72Wvu6PaIW6Q",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8080/api/ventas",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"ventas"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "ver-venta-local-por-id",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTgxMjQ3MSwiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1NDEyNDcxLCJ1c2VySWQiOjF9.jSQOX8VfbRrZafMtpEcQGphm1TsN2HSHzccs-9cpWijkvaZS-ndSX3XH62o-PpLhWCrsECvJKL72Wvu6PaIW6Q",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8080/api/ventas/1701",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"ventas",
+										"1701"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			],
+			"description": "📁 Backend Alumno (localhost:8080)"
+		},
+		{
+			"name": "Proxy",
+			"item": [
+				{
+					"name": "Eventos",
+					"item": [
+						{
+							"name": "listar-eventos-completos",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTY5MzUzNywiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1MjkzNTM3LCJ1c2VySWQiOjF9._WgQhSBh2KhY5Z8Oor2mKiGT6KB45o4-L0loShlxTeLrJEjqip-LMep8Co31OX3Gia8nRtXaXIAxoaqWUSVaYg",
+										"type": "text"
+									},
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": ""
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "listar-eventos-resumidos",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTI4MDc2MiwiYXV0aCI6IiIsImlhdCI6MTc2NDg4MDc2Mn0.Nrxbx5KgwXg63Irsg3OtQ_A_AByVhlzKRotvdLtjKeLVWdaPuaKRbI6D0Vook2YbHXmgfwuIe-UYDzZI08B0Rw",
+										"type": "text"
+									},
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/proxy/eventos-resumidos",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"proxy",
+										"eventos-resumidos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "buscar-evento-por-id",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTY5MzUzNywiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1MjkzNTM3LCJ1c2VySWQiOjF9._WgQhSBh2KhY5Z8Oor2mKiGT6KB45o4-L0loShlxTeLrJEjqip-LMep8Co31OX3Gia8nRtXaXIAxoaqWUSVaYg",
+										"type": "text"
+									},
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/proxy/eventos/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"proxy",
+										"eventos",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "forzar-actualizacion",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTI4MDc2MiwiYXV0aCI6IiIsImlhdCI6MTc2NDg4MDc2Mn0.Nrxbx5KgwXg63Irsg3OtQ_A_AByVhlzKRotvdLtjKeLVWdaPuaKRbI6D0Vook2YbHXmgfwuIe-UYDzZI08B0Rw",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/proxy/eventos/forzar-actualizacion",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"proxy",
+										"eventos",
+										"forzar-actualizacion"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"description": "### 🔹 Proxy / Eventos\n\n_(todos contra_ `_{{proxy_url}}_` _\\=_ `_http://localhost:8081/api/proxy_`_)_\n\n**listar-eventos-completos**\n\n- **Método:** `GET`\n    \n- **URL:** `{{proxy_url}}/eventos`\n    \n- **Función:** el proxy llama a la **cátedra** y devuelve los **eventos completos** (igual que P4).\n    \n- **Uso:** probar que:\n    \n    - el proxy llega al servidor de la cátedra\n        \n    - el JWT hacia la cátedra está bien\n        \n    - el backend puede usar esto para sincronizar.\n        \n\n**listar-eventos-resumidos**\n\n- **Método:** `GET`\n    \n- **URL:** `{{proxy_url}}/eventos-resumidos`\n    \n- **Función:** mismo concepto que arriba, pero versión “resumida”.\n    \n- **Uso:** podrías usarlo después en la app móvil para listado liviano.\n    \n\n**buscar-evento-por-id**\n\n- **Método:** `GET`\n    \n- **URL:** `{{proxy_url}}/eventos/{{id}}`\n    \n- **Función:** devuelve un único evento (detalle).\n    \n- **Uso:** debug puntual de un evento.\n    \n\n**forzar-actualizacion**\n\n- **Método:** `GET`\n    \n- **URL:** `{{proxy_url}}/eventos/forzar-actualizacion`\n    \n- **Función:** hace que el proxy llame al endpoint de la cátedra `forzar-actualizacion`.\n    \n- **Uso:** simular que se disparó el proceso de actualización sin esperar las 2 horas."
+				},
+				{
+					"name": "Asientos",
+					"item": [
+						{
+							"name": "asientos-por-evento",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTY5MzUzNywiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1MjkzNTM3LCJ1c2VySWQiOjF9._WgQhSBh2KhY5Z8Oor2mKiGT6KB45o4-L0loShlxTeLrJEjqip-LMep8Co31OX3Gia8nRtXaXIAxoaqWUSVaYg",
+										"type": "text"
+									},
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/proxy/eventos/1/asientos",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"proxy",
+										"eventos",
+										"1",
+										"asientos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "estado-asientos-redis",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTI4MDc2MiwiYXV0aCI6IiIsImlhdCI6MTc2NDg4MDc2Mn0.Nrxbx5KgwXg63Irsg3OtQ_A_AByVhlzKRotvdLtjKeLVWdaPuaKRbI6D0Vook2YbHXmgfwuIe-UYDzZI08B0Rw",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/proxy/eventos/1/estado-asientos",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"proxy",
+										"eventos",
+										"1",
+										"estado-asientos"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "bloquear-asiento",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxODUyNTUzNjUxLCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY2MTUzNjUxLCJ1c2VySWQiOjJ9.fjaCuvw-y1QWb-lsoe3JGzdksko41zRwTSPc2Cs6buMwNet8sNfMtCvoqZ9tHS599Ao12bo06n1OAehgPdMYQw",
+										"description": "token del user login back",
+										"type": "text",
+										"disabled": true
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxODUyNTUzNjUxLCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY2MTUzNjUxLCJ1c2VySWQiOjJ9.fjaCuvw-y1QWb-lsoe3JGzdksko41zRwTSPc2Cs6buMwNet8sNfMtCvoqZ9tHS599Ao12bo06n1OAehgPdMYQw",
+										"description": "PROXY_TOKEN",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"fila\": 7,\n  \"columna\": 3\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/proxy/eventos/1/bloqueos",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"proxy",
+										"eventos",
+										"1",
+										"bloqueos"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"description": "### 🔹 Proxy / Asientos\n\n**asientos-por-evento**\n\n- **Método:** `GET`\n    \n- **URL:** `{{proxy_url}}/eventos/{{id}}/asientos`\n    \n- **Función:** devuelve el **JSON con asientos** de un evento, leyendo Redis de la cátedra y formateado como `EstadoAsientosRemotoDTO`.\n    \n- **Uso:** el backend lo consume para sincronizar asientos (Issue #22). Para vos es ideal para ver “qué ve tu backend”.\n    \n\n**estado-asientos-redis**\n\n- **Método:** `GET`\n    \n- **URL:** `{{proxy_url}}/eventos/{{id}}/estado-asientos`\n    \n- **Función:** Devuelve **el JSON EXACTO** de Redis remoto de la cátedra.  \n    Incluye únicamente asientos **que están bloqueados o vendidos** según Redis:\n    \n- **Uso en pruebas:**\n    \n    - Ver lo que realmente devuelven **Redis + proxy**, sin procesar.\n        \n    - Compararlo con lo que produce el backend (estado TR).\n        \n    - Explicar al profesor diferencias:\n        \n        - El proxy devuelve _solo bloqueados/vendidos_.\n            \n        - El backend devuelve _el mapa completo_, fusionado con DB."
+				},
+				{
+					"name": "Ventas",
+					"item": [
+						{
+							"name": "realizar-venta",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTgxMjQ3MSwiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1NDEyNDcxLCJ1c2VySWQiOjF9.jSQOX8VfbRrZafMtpEcQGphm1TsN2HSHzccs-9cpWijkvaZS-ndSX3XH62o-PpLhWCrsECvJKL72Wvu6PaIW6Q",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"eventoId\": 2,\n  \"fecha\": \"2025-08-17T20:00:00.000Z\",\n  \"precioVenta\": 1400.10,\n  \"asientos\": [\n    {\n      \"fila\": 2,\n      \"columna\": 3,\n      \"persona\": \"Martin Navarro\"\n    },\n    {\n      \"fila\": 2,\n      \"columna\": 4,\n      \"persona\": \"Martina Rizzotti\"\n    }\n  ]\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/proxy/eventos/2/venta",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"proxy",
+										"eventos",
+										"2",
+										"venta"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "listar-ventas-por-alumno",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxODUyNTUzNjUxLCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY2MTUzNjUxLCJ1c2VySWQiOjJ9.fjaCuvw-y1QWb-lsoe3JGzdksko41zRwTSPc2Cs6buMwNet8sNfMtCvoqZ9tHS599Ao12bo06n1OAehgPdMYQw",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/proxy/listar-ventas",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"proxy",
+										"listar-ventas"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "ver-venta-por-id",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTg1MTgxMjQ3MSwiYXV0aCI6IlJPTEVfQURNSU4gUk9MRV9VU0VSIiwiaWF0IjoxNzY1NDEyNDcxLCJ1c2VySWQiOjF9.jSQOX8VfbRrZafMtpEcQGphm1TsN2HSHzccs-9cpWijkvaZS-ndSX3XH62o-PpLhWCrsECvJKL72Wvu6PaIW6Q",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/proxy/listar-venta/1749",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"proxy",
+										"listar-venta",
+										"1749"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			],
+			"description": "### 🔹 Proxy /\n\n**Postman → Proxy → Feign → Cátedra → Feign → Proxy → Postman ✅**"
+		},
+		{
+			"name": "Servidor Cátedra",
+			"item": [
+				{
+					"name": "Forzar actualización de eventos (cátedra)",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJ0aW5hIiwiZXhwIjoxNzY2NzA1MzE3LCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY0MTEzMzE3fQ.IYh8NSWHwq-CX3hAjHQP0rnpSpJSrLAeHBE0iti4lN_Whn1zy3EDdf5b4ksQEdwwSvsK7DJTgB4aTXUykgEMEA",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://192.168.194.250:8080/api/endpoints/v1/forzar-actualizacion",
+							"protocol": "http",
+							"host": [
+								"192",
+								"168",
+								"194",
+								"250"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"endpoints",
+								"v1",
+								"forzar-actualizacion"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "P1 - Registro de sesión del alumno",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"martin_nt\",\n  \"password\": \"martin123\",\n  \"firstName\": \"Martin\",\n  \"lastName\": \"Navarro\",\n  \"email\": \"martin_nt@um.edu.ar\",\n  \"nombreAlumno\": \"Martin Navarro\",\n  \"descripcionProyecto\": \"TP Final 2025\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://192.168.194.250:8080/api/v1/agregar_usuario",
+							"protocol": "http",
+							"host": [
+								"192",
+								"168",
+								"194",
+								"250"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"agregar_usuario"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "P2 - Login de usuario",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"martin_nt\",\n  \"password\": \"martin123\",\n  \"rememberMe\": false\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://192.168.194.250:8080/api/authenticate",
+							"protocol": "http",
+							"host": [
+								"192",
+								"168",
+								"194",
+								"250"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"authenticate"
+							]
+						},
+						"description": "- Los token que devuelva sirven para autenticar llamadas **proxy → cátedra.**\n    \n- **Va en el .env del proxy, lo usa Feign para llamar a** `http://192.168.194.250:8080/api/endpoints/v1/**`"
+					},
+					"response": []
+				},
+				{
+					"name": "P3 - Listado completo de eventos (datos resumidos)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJ0aW5hIiwiZXhwIjoxNzY2NzA1MzE3LCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY0MTEzMzE3fQ.IYh8NSWHwq-CX3hAjHQP0rnpSpJSrLAeHBE0iti4lN_Whn1zy3EDdf5b4ksQEdwwSvsK7DJTgB4aTXUykgEMEA",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://192.168.194.250:8080/api/endpoints/v1/eventos-resumidos",
+							"protocol": "http",
+							"host": [
+								"192",
+								"168",
+								"194",
+								"250"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"endpoints",
+								"v1",
+								"eventos-resumidos"
+							],
+							"query": [
+								{
+									"key": "",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "P4 - Listado completo de eventos (con todos los datos)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJ0aW5hIiwiZXhwIjoxNzY2NzA1MzE3LCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY0MTEzMzE3fQ.IYh8NSWHwq-CX3hAjHQP0rnpSpJSrLAeHBE0iti4lN_Whn1zy3EDdf5b4ksQEdwwSvsK7DJTgB4aTXUykgEMEA",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://192.168.194.250:8080/api/endpoints/v1/eventos",
+							"protocol": "http",
+							"host": [
+								"192",
+								"168",
+								"194",
+								"250"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"endpoints",
+								"v1",
+								"eventos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "P5 - Datos completos de un evento",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJ0aW5hIiwiZXhwIjoxNzY2NzA1MzE3LCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY0MTEzMzE3fQ.IYh8NSWHwq-CX3hAjHQP0rnpSpJSrLAeHBE0iti4lN_Whn1zy3EDdf5b4ksQEdwwSvsK7DJTgB4aTXUykgEMEA",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://192.168.194.250:8080/api/endpoints/v1/evento/2",
+							"protocol": "http",
+							"host": [
+								"192",
+								"168",
+								"194",
+								"250"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"endpoints",
+								"v1",
+								"evento",
+								"2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "P6 - Bloqueo de asientos en un evento",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJ0aW5hIiwiZXhwIjoxNzY2NzA1MzE3LCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY0MTEzMzE3fQ.IYh8NSWHwq-CX3hAjHQP0rnpSpJSrLAeHBE0iti4lN_Whn1zy3EDdf5b4ksQEdwwSvsK7DJTgB4aTXUykgEMEA",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"eventoId\": 2,\n    \"asientos\": [\n    {\n        \"fila\": 1,\n        \"columna\": 8\n    },\n    {\n        \"fila\": 2,\n        \"columna\": 1\n    }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://192.168.194.250:8080/api/endpoints/v1/bloquear-asientos",
+							"protocol": "http",
+							"host": [
+								"192",
+								"168",
+								"194",
+								"250"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"endpoints",
+								"v1",
+								"bloquear-asientos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "P7 - Venta de asientos por evento",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJ0aW5hIiwiZXhwIjoxNzY2NzA1MzE3LCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY0MTEzMzE3fQ.IYh8NSWHwq-CX3hAjHQP0rnpSpJSrLAeHBE0iti4lN_Whn1zy3EDdf5b4ksQEdwwSvsK7DJTgB4aTXUykgEMEA",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\"eventoId\": 1,\n\"fecha\": \"2025-08-17T20:00:00.000Z\",\n\"precioVenta\": 1400.10,\n\"asientos\": [\n{\n\"fila\": 2,\n\"columna\": 3,\n\"persona\": \"Fernando Galvez\"\n},\n{\"fila\": 2,\n\"columna\": 4,\n\"persona\": \"Carlos Perez\"\n}\n]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://192.168.194.250:8080/api/endpoints/v1/realizar-venta",
+							"protocol": "http",
+							"host": [
+								"192",
+								"168",
+								"194",
+								"250"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"endpoints",
+								"v1",
+								"realizar-venta"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "P8 - Listado completo de ventas por cada alumno (datos resumidos)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJ0aW5hIiwiZXhwIjoxNzY2NzA1MzE3LCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY0MTEzMzE3fQ.IYh8NSWHwq-CX3hAjHQP0rnpSpJSrLAeHBE0iti4lN_Whn1zy3EDdf5b4ksQEdwwSvsK7DJTgB4aTXUykgEMEA",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://192.168.194.250:8080/api/endpoints/v1/listar-ventas",
+							"protocol": "http",
+							"host": [
+								"192",
+								"168",
+								"194",
+								"250"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"endpoints",
+								"v1",
+								"listar-ventas"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "P9 - Ver datos de una venta en particular",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJ0aW5hIiwiZXhwIjoxNzY2NzA1MzE3LCJhdXRoIjoiUk9MRV9VU0VSIiwiaWF0IjoxNzY0MTEzMzE3fQ.IYh8NSWHwq-CX3hAjHQP0rnpSpJSrLAeHBE0iti4lN_Whn1zy3EDdf5b4ksQEdwwSvsK7DJTgB4aTXUykgEMEA",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://192.168.194.250:8080/api/endpoints/v1/listar-venta/1",
+							"protocol": "http",
+							"host": [
+								"192",
+								"168",
+								"194",
+								"250"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"endpoints",
+								"v1",
+								"listar-venta",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "### 🔹 Servidor Cátedra\n\n- Todos estos apuntan directo a `{{cat_url}}` (`http://192.168.194.250:8080/api`).\n    \n- **Carpeta de referencia**: “esto es lo que expone la cátedra”.\n    \n\n**Forzar actualización de eventos (cátedra)**\n\n- Este endpoint pertenece al servidor de la cátedra.\n    \n- Dispara manualmente una actualización de eventos.\n    \n- Cuando se ejecuta, debería producir un mensaje Kafka en el tópico: eventos-actualizacion.\n    \n- Se usa para pruebas del proxy y sincronización."
+		}
+	]
+}
