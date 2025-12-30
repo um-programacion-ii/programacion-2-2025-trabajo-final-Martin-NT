@@ -87,7 +87,7 @@ cd programacion-2-2025-trabajo-final-Martin-NT
 **3. Levantar servicios (DB, Redis, Kafka)**
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 **4. Levantar Backend**
 ```bash
