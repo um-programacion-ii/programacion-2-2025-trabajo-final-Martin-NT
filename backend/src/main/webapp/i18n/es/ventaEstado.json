@@ -1,0 +1,10 @@
+{
+  "backendCatedraApp": {
+    "VentaEstado": {
+      "null": "",
+      "PENDIENTE": "PENDIENTE",
+      "EXITOSA": "EXITOSA",
+      "FALLIDA": "FALLIDA"
+    }
+  }
+}

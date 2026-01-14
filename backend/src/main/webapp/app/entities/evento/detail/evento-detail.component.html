@@ -1,0 +1,66 @@
+<div class="d-flex justify-content-center">
+  <div class="col-8">
+    @if (evento(); as eventoRef) {
+      <div>
+        <h2 data-cy="eventoDetailsHeading"><span jhiTranslate="backendCatedraApp.evento.detail.title">Evento</span></h2>
+
+        <hr />
+
+        <jhi-alert-error />
+
+        <jhi-alert />
+
+        <dl class="row-md jh-entity-details">
+          <dt><span jhiTranslate="global.field.id">ID</span></dt>
+          <dd>
+            <span>{{ eventoRef.id }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.evento.titulo">Titulo</span></dt>
+          <dd>
+            <span>{{ eventoRef.titulo }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.evento.descripcion">Descripcion</span></dt>
+          <dd>
+            <span>{{ eventoRef.descripcion }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.evento.fecha">Fecha</span></dt>
+          <dd>
+            <span>{{ eventoRef.fecha | formatMediumDate }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.evento.hora">Hora</span></dt>
+          <dd>
+            <span>{{ eventoRef.hora }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.evento.organizador">Organizador</span></dt>
+          <dd>
+            <span>{{ eventoRef.organizador }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.evento.presentadores">Presentadores</span></dt>
+          <dd>
+            <span>{{ eventoRef.presentadores }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.evento.cantidadAsientosTotales">Cantidad Asientos Totales</span></dt>
+          <dd>
+            <span>{{ eventoRef.cantidadAsientosTotales }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.evento.filaAsientos">Fila Asientos</span></dt>
+          <dd>
+            <span>{{ eventoRef.filaAsientos }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.evento.columnaAsientos">Columna Asientos</span></dt>
+          <dd>
+            <span>{{ eventoRef.columnaAsientos }}</span>
+          </dd>
+        </dl>
+
+        <button type="submit" (click)="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
+          <fa-icon icon="arrow-left"></fa-icon>&nbsp;<span jhiTranslate="entity.action.back">Volver</span>
+        </button>
+
+        <button type="button" [routerLink]="['/evento', eventoRef.id, 'edit']" class="btn btn-primary">
+          <fa-icon icon="pencil-alt"></fa-icon>&nbsp;<span jhiTranslate="entity.action.edit">Editar</span>
+        </button>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,205 @@
+<div class="d-flex justify-content-center">
+  <div class="col-8">
+    <form name="editForm" novalidate (ngSubmit)="save()" [formGroup]="editForm">
+      <h2 id="jhi-evento-heading" data-cy="EventoCreateUpdateHeading" jhiTranslate="backendCatedraApp.evento.home.createOrEditLabel">
+        Crear o editar Evento
+      </h2>
+
+      <div>
+        <jhi-alert-error />
+
+        @if (editForm.controls.id.value !== null) {
+          <div class="mb-3">
+            <label class="form-label" for="field_id" jhiTranslate="backendCatedraApp.evento.id">ID</label>
+            <input type="number" class="form-control" name="id" id="field_id" data-cy="id" formControlName="id" [readonly]="true" />
+          </div>
+        }
+
+        @let tituloRef = editForm.get('titulo')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_titulo" jhiTranslate="backendCatedraApp.evento.titulo">Titulo</label>
+          <input type="text" class="form-control" name="titulo" id="field_titulo" data-cy="titulo" formControlName="titulo" />
+          @if (tituloRef.invalid && (tituloRef.dirty || tituloRef.touched)) {
+            <div>
+              @if (editForm.get('titulo')?.errors?.required) {
+                <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="field_descripcion" jhiTranslate="backendCatedraApp.evento.descripcion">Descripcion</label>
+          <input
+            type="text"
+            class="form-control"
+            name="descripcion"
+            id="field_descripcion"
+            data-cy="descripcion"
+            formControlName="descripcion"
+          />
+        </div>
+
+        @let fechaRef = editForm.get('fecha')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_fecha" jhiTranslate="backendCatedraApp.evento.fecha">Fecha</label>
+          <div class="input-group">
+            <input
+              id="field_fecha"
+              data-cy="fecha"
+              type="text"
+              class="form-control"
+              name="fecha"
+              ngbDatepicker
+              #fechaDp="ngbDatepicker"
+              formControlName="fecha"
+            />
+            <button type="button" class="btn btn-secondary" (click)="fechaDp.toggle()"><fa-icon icon="calendar-alt"></fa-icon></button>
+          </div>
+          @if (fechaRef.invalid && (fechaRef.dirty || fechaRef.touched)) {
+            <div>
+              @if (editForm.get('fecha')?.errors?.required) {
+                <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+              }
+            </div>
+          }
+        </div>
+
+        @let horaRef = editForm.get('hora')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_hora" jhiTranslate="backendCatedraApp.evento.hora">Hora</label>
+          <input type="time" class="form-control" name="hora" id="field_hora" data-cy="hora" formControlName="hora" />
+          @if (horaRef.invalid && (horaRef.dirty || horaRef.touched)) {
+            <div>
+              @if (editForm.get('hora')?.errors?.required) {
+                <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="field_organizador" jhiTranslate="backendCatedraApp.evento.organizador">Organizador</label>
+          <input
+            type="text"
+            class="form-control"
+            name="organizador"
+            id="field_organizador"
+            data-cy="organizador"
+            formControlName="organizador"
+          />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="field_presentadores" jhiTranslate="backendCatedraApp.evento.presentadores">Presentadores</label>
+          <input
+            type="text"
+            class="form-control"
+            name="presentadores"
+            id="field_presentadores"
+            data-cy="presentadores"
+            formControlName="presentadores"
+          />
+        </div>
+
+        @let cantidadAsientosTotalesRef = editForm.get('cantidadAsientosTotales')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_cantidadAsientosTotales" jhiTranslate="backendCatedraApp.evento.cantidadAsientosTotales"
+            >Cantidad Asientos Totales</label
+          >
+          <input
+            type="number"
+            class="form-control"
+            name="cantidadAsientosTotales"
+            id="field_cantidadAsientosTotales"
+            data-cy="cantidadAsientosTotales"
+            formControlName="cantidadAsientosTotales"
+          />
+          @if (cantidadAsientosTotalesRef.invalid && (cantidadAsientosTotalesRef.dirty || cantidadAsientosTotalesRef.touched)) {
+            <div>
+              @if (editForm.get('cantidadAsientosTotales')?.errors?.required) {
+                <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+              }
+              <small
+                class="form-text text-danger"
+                [hidden]="!editForm.get('cantidadAsientosTotales')?.errors?.number"
+                jhiTranslate="entity.validation.number"
+                >Este campo debe ser un número.</small
+              >
+            </div>
+          }
+        </div>
+
+        @let filaAsientosRef = editForm.get('filaAsientos')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_filaAsientos" jhiTranslate="backendCatedraApp.evento.filaAsientos">Fila Asientos</label>
+          <input
+            type="number"
+            class="form-control"
+            name="filaAsientos"
+            id="field_filaAsientos"
+            data-cy="filaAsientos"
+            formControlName="filaAsientos"
+          />
+          @if (filaAsientosRef.invalid && (filaAsientosRef.dirty || filaAsientosRef.touched)) {
+            <div>
+              @if (editForm.get('filaAsientos')?.errors?.required) {
+                <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+              }
+              <small
+                class="form-text text-danger"
+                [hidden]="!editForm.get('filaAsientos')?.errors?.number"
+                jhiTranslate="entity.validation.number"
+                >Este campo debe ser un número.</small
+              >
+            </div>
+          }
+        </div>
+
+        @let columnaAsientosRef = editForm.get('columnaAsientos')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_columnaAsientos" jhiTranslate="backendCatedraApp.evento.columnaAsientos"
+            >Columna Asientos</label
+          >
+          <input
+            type="number"
+            class="form-control"
+            name="columnaAsientos"
+            id="field_columnaAsientos"
+            data-cy="columnaAsientos"
+            formControlName="columnaAsientos"
+          />
+          @if (columnaAsientosRef.invalid && (columnaAsientosRef.dirty || columnaAsientosRef.touched)) {
+            <div>
+              @if (editForm.get('columnaAsientos')?.errors?.required) {
+                <small class="form-text text-danger" jhiTranslate="entity.validation.required">Este campo es obligatorio.</small>
+              }
+              <small
+                class="form-text text-danger"
+                [hidden]="!editForm.get('columnaAsientos')?.errors?.number"
+                jhiTranslate="entity.validation.number"
+                >Este campo debe ser un número.</small
+              >
+            </div>
+          }
+        </div>
+      </div>
+
+      <div>
+        <button type="button" id="cancel-save" data-cy="entityCreateCancelButton" class="btn btn-secondary" (click)="previousState()">
+          <fa-icon icon="ban"></fa-icon>&nbsp;<span jhiTranslate="entity.action.cancel">Cancelar</span>
+        </button>
+
+        <button
+          type="submit"
+          id="save-entity"
+          data-cy="entityCreateSaveButton"
+          [disabled]="editForm.invalid || isSaving"
+          class="btn btn-primary"
+        >
+          <fa-icon icon="save"></fa-icon>&nbsp;<span jhiTranslate="entity.action.save">Guardar</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

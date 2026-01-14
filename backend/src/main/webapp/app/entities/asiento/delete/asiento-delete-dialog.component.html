@@ -1,0 +1,24 @@
+@if (asiento) {
+  <form name="deleteForm" (ngSubmit)="confirmDelete(asiento.id!)">
+    <div class="modal-header">
+      <h4 class="modal-title" data-cy="asientoDeleteDialogHeading" jhiTranslate="entity.delete.title">Confirmar operación de borrado</h4>
+    </div>
+
+    <div class="modal-body">
+      <jhi-alert-error />
+      <p id="jhi-delete-asiento-heading" jhiTranslate="backendCatedraApp.asiento.delete.question" [translateValues]="{ id: asiento.id }">
+        ¿Seguro que quiere eliminar Asiento {{ asiento.id }}?
+      </p>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-dismiss="modal" (click)="cancel()">
+        <fa-icon icon="ban"></fa-icon>&nbsp;<span jhiTranslate="entity.action.cancel">Cancelar</span>
+      </button>
+
+      <button id="jhi-confirm-delete-asiento" data-cy="entityConfirmDeleteButton" type="submit" class="btn btn-danger">
+        <fa-icon icon="times"></fa-icon>&nbsp;<span jhiTranslate="entity.action.delete">Eliminar</span>
+      </button>
+    </div>
+  </form>
+}

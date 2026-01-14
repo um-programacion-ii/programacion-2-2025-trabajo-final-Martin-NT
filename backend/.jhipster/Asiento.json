@@ -1,0 +1,45 @@
+{
+  "annotations": {
+    "changelogDate": "20251114223207"
+  },
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "fila",
+      "fieldType": "Integer",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "columna",
+      "fieldType": "Integer",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "estado",
+      "fieldType": "AsientoEstado",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "LIBRE,BLOQUEADO,OCUPADO"
+    },
+    {
+      "fieldName": "personaActual",
+      "fieldType": "String"
+    }
+  ],
+  "jpaMetamodelFiltering": false,
+  "name": "Asiento",
+  "pagination": "no",
+  "readOnly": false,
+  "relationships": [
+    {
+      "otherEntityField": "titulo",
+      "otherEntityName": "evento",
+      "otherEntityRelationshipName": "asientos",
+      "relationshipName": "evento",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one",
+      "relationshipValidateRules": ["required"]
+    }
+  ],
+  "searchEngine": "no",
+  "service": "serviceImpl"
+}

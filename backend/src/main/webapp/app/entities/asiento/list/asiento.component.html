@@ -1,0 +1,137 @@
+<div>
+  <h2 id="page-heading" data-cy="AsientoHeading">
+    <span jhiTranslate="backendCatedraApp.asiento.home.title">Asientos</span>
+
+    <div class="d-flex justify-content-end">
+      <button class="btn btn-info me-2" (click)="load()" [disabled]="isLoading">
+        <fa-icon icon="sync" [animation]="isLoading ? 'spin' : undefined"></fa-icon>
+        <span jhiTranslate="backendCatedraApp.asiento.home.refreshListLabel">Refrescar lista</span>
+      </button>
+
+      <button
+        id="jh-create-entity"
+        data-cy="entityCreateButton"
+        class="btn btn-primary jh-create-entity create-asiento"
+        [routerLink]="['/asiento/new']"
+      >
+        <fa-icon icon="plus"></fa-icon>
+        <span jhiTranslate="backendCatedraApp.asiento.home.createLabel">Crear nuevo Asiento</span>
+      </button>
+    </div>
+  </h2>
+
+  <jhi-alert-error />
+
+  <jhi-alert />
+
+  @if (asientos().length === 0) {
+    <div class="alert alert-warning" id="no-result">
+      <span jhiTranslate="backendCatedraApp.asiento.home.notFound">Ningún Asientos encontrado</span>
+    </div>
+  } @else {
+    <div class="table-responsive table-entities" id="entities">
+      <table class="table table-striped" aria-describedby="page-heading">
+        <thead>
+          <tr jhiSort [(sortState)]="sortState" (sortChange)="navigateToWithComponentValues($event)">
+            <th scope="col" jhiSortBy="id">
+              <div class="d-flex">
+                <span jhiTranslate="global.field.id">ID</span>
+
+                <fa-icon class="p-1" icon="sort"></fa-icon>
+              </div>
+            </th>
+            <th scope="col" jhiSortBy="fila">
+              <div class="d-flex">
+                <span jhiTranslate="backendCatedraApp.asiento.fila">Fila</span>
+
+                <fa-icon class="p-1" icon="sort"></fa-icon>
+              </div>
+            </th>
+            <th scope="col" jhiSortBy="columna">
+              <div class="d-flex">
+                <span jhiTranslate="backendCatedraApp.asiento.columna">Columna</span>
+
+                <fa-icon class="p-1" icon="sort"></fa-icon>
+              </div>
+            </th>
+            <th scope="col" jhiSortBy="estado">
+              <div class="d-flex">
+                <span jhiTranslate="backendCatedraApp.asiento.estado">Estado</span>
+
+                <fa-icon class="p-1" icon="sort"></fa-icon>
+              </div>
+            </th>
+            <th scope="col" jhiSortBy="personaActual">
+              <div class="d-flex">
+                <span jhiTranslate="backendCatedraApp.asiento.personaActual">Persona Actual</span>
+
+                <fa-icon class="p-1" icon="sort"></fa-icon>
+              </div>
+            </th>
+            <th scope="col" jhiSortBy="evento.titulo">
+              <div class="d-flex">
+                <span jhiTranslate="backendCatedraApp.asiento.evento">Evento</span>
+                <fa-icon class="p-1" icon="sort"></fa-icon>
+              </div>
+            </th>
+            <th scope="col" jhiSortBy="ventas.id">
+              <div class="d-flex">
+                <span jhiTranslate="backendCatedraApp.asiento.ventas">Ventas</span>
+                <fa-icon class="p-1" icon="sort"></fa-icon>
+              </div>
+            </th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (asiento of asientos(); track trackId(asiento)) {
+            <tr data-cy="entityTable">
+              <td>
+                <a [routerLink]="['/asiento', asiento.id, 'view']">{{ asiento.id }}</a>
+              </td>
+              <td>{{ asiento.fila }}</td>
+              <td>{{ asiento.columna }}</td>
+              <td [jhiTranslate]="'backendCatedraApp.AsientoEstado.' + (asiento.estado ?? 'null')">
+                {{ { null: '', LIBRE: 'LIBRE', BLOQUEADO: 'BLOQUEADO', OCUPADO: 'OCUPADO' }[asiento.estado ?? 'null'] }}
+              </td>
+              <td>{{ asiento.personaActual }}</td>
+              <td>
+                @if (asiento.evento) {
+                  <div>
+                    <a [routerLink]="['/evento', asiento.evento.id, 'view']">{{ asiento.evento.titulo }}</a>
+                  </div>
+                }
+              </td>
+              <td>
+                @for (ventas of asiento.ventas; track $index; let last = $last) {
+                  <span>
+                    <a class="form-control-static" [routerLink]="['/venta', ventas.id, 'view']">{{ ventas.id }}</a
+                    >{{ last ? '' : ', ' }}
+                  </span>
+                }
+              </td>
+              <td class="text-end">
+                <div class="btn-group">
+                  <a [routerLink]="['/asiento', asiento.id, 'view']" class="btn btn-info btn-sm" data-cy="entityDetailsButton">
+                    <fa-icon icon="eye"></fa-icon>
+                    <span class="d-none d-md-inline" jhiTranslate="entity.action.view">Vista</span>
+                  </a>
+
+                  <a [routerLink]="['/asiento', asiento.id, 'edit']" class="btn btn-primary btn-sm" data-cy="entityEditButton">
+                    <fa-icon icon="pencil-alt"></fa-icon>
+                    <span class="d-none d-md-inline" jhiTranslate="entity.action.edit">Editar</span>
+                  </a>
+
+                  <button type="submit" (click)="delete(asiento)" class="btn btn-danger btn-sm" data-cy="entityDeleteButton">
+                    <fa-icon icon="times"></fa-icon>
+                    <span class="d-none d-md-inline" jhiTranslate="entity.action.delete">Eliminar</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

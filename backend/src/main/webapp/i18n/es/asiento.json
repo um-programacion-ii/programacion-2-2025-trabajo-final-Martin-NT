@@ -1,0 +1,29 @@
+{
+  "backendCatedraApp": {
+    "asiento": {
+      "home": {
+        "title": "Asientos",
+        "refreshListLabel": "Refrescar lista",
+        "createLabel": "Crear nuevo Asiento",
+        "createOrEditLabel": "Crear o editar Asiento",
+        "notFound": "Ningún Asientos encontrado"
+      },
+      "created": "Un nuevo Asiento ha sido creado con el identificador {{ param }}",
+      "updated": "Un Asiento ha sido actualizado con el identificador {{ param }}",
+      "deleted": "Un Asiento ha sido eliminado con el identificador {{ param }}",
+      "delete": {
+        "question": "¿Seguro que quiere eliminar Asiento {{ id }}?"
+      },
+      "detail": {
+        "title": "Asiento"
+      },
+      "id": "ID",
+      "fila": "Fila",
+      "columna": "Columna",
+      "estado": "Estado",
+      "personaActual": "Persona Actual",
+      "evento": "Evento",
+      "ventas": "Ventas"
+    }
+  }
+}

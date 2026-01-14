@@ -1,0 +1,57 @@
+{
+  "annotations": {
+    "changelogDate": "20251114012033"
+  },
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "titulo",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "descripcion",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "fecha",
+      "fieldType": "LocalDate",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "hora",
+      "fieldType": "LocalTime",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "organizador",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "presentadores",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "cantidadAsientosTotales",
+      "fieldType": "Integer",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "filaAsientos",
+      "fieldType": "Integer",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "columnaAsientos",
+      "fieldType": "Integer",
+      "fieldValidateRules": ["required"]
+    }
+  ],
+  "jpaMetamodelFiltering": false,
+  "name": "Evento",
+  "pagination": "no",
+  "readOnly": false,
+  "relationships": [],
+  "searchEngine": "no",
+  "service": "serviceImpl"
+}

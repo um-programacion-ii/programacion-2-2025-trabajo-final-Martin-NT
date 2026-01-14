@@ -1,0 +1,148 @@
+# application-dev.yml
+# ===================================================================
+# Spring Boot configuration for the "dev" profile.
+# ===================================================================
+
+logging:
+  level:
+    ROOT: INFO
+    tech.jhipster: DEBUG
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    reactor.netty: WARN
+    org.springframework.web: INFO
+
+    # Tu aplicación
+    ar.edu.um.backend: INFO
+    ar.edu.um.backend.service.ProxyService: INFO
+    ar.edu.um.backend.service.EventoSyncService: INFO
+    ar.edu.um.backend.web.rest.AdminSyncResource: INFO
+    ar.edu.um.backend.web.rest.ProxyNotificationResource: INFO
+
+spring:
+  devtools:
+    restart:
+      enabled: true
+      additional-exclude: static/**
+    livereload:
+      enabled: false
+
+  jackson:
+    serialization:
+      indent-output: true
+
+  # ===================================================================
+  # Base de datos principal (POSTGRES - DEV)
+  # ===================================================================
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/backendCatedra}
+    username: ${SPRING_DATASOURCE_USERNAME:backendCatedra}
+    password: ${SPRING_DATASOURCE_PASSWORD:backendCatedra}
+    hikari:
+      poolName: Hikari
+      auto-commit: false
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  liquibase:
+    contexts: dev, faker
+
+  # ===================================================================
+  # Lugar reservado para soporte H2 futuro (NO ACTIVADO)
+  #
+  # Para usar H2 más adelante, solo crearemos profile "h2"
+  # y habilitaremos algo como:
+  #
+  # spring:
+  #   datasource:
+  #     url: jdbc:h2:mem:backend;DB_CLOSE_DELAY=-1
+  #     driver-class-name: org.h2.Driver
+  #   jpa:
+  #     database-platform: org.hibernate.dialect.H2Dialect
+  #
+  # ===================================================================
+
+  mail:
+    host: localhost
+    port: 25
+
+  messages:
+    cache-duration: PT1S
+
+  thymeleaf:
+    cache: false
+
+server:
+  port: 8080
+  forward-headers-strategy: native
+
+# ===================================================================
+# JHipster configuration
+# ===================================================================
+
+jhipster:
+  cache:
+    redis:
+      expiration: 3600
+      server: redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}
+      cluster: false
+
+  cors:
+    allowed-origins: 'http://localhost:8100,https://localhost:8100,http://localhost:9000,https://localhost:9000,http://localhost:4200,https://localhost:4200'
+    allowed-origin-patterns: 'https://*.githubpreview.dev'
+    allowed-methods: '*'
+    allowed-headers: '*'
+    exposed-headers: 'Authorization,Link,X-Total-Count,X-${jhipster.clientApp.name}-alert,X-${jhipster.clientApp.name}-error,X-${jhipster.clientApp.name}-params'
+    allow-credentials: true
+    max-age: 1800
+
+  security:
+    authentication:
+      jwt:
+        base64-secret: NmE5MTAzODM1YjQyMTAyMjE5MmRlOWRjOWI0Y2IyY2U0YTIwNTI4YmEwM2E0ODMzZjIwMGIyYzM0YzY2NTc4NTZlNDRlNmYwMzc1MDcxNGJlMTE3N2VkYWM1MDBjOTc2MzRlMzJjOTYyMDA4ZGQzNWQzOWMzYzY1OWNkNWUyMmY=
+        token-validity-in-seconds: 86400000
+        token-validity-in-seconds-for-remember-me: 2592000
+
+  mail:
+    base-url: http://127.0.0.1:8080
+
+  logging:
+    use-json-format: false
+    logstash:
+      enabled: false
+      host: localhost
+      port: 5000
+      ring-buffer-size: 512
+
+# ===================================================================
+# Configuración del servicio de la cátedra
+# ===================================================================
+
+catservice:
+  url: ${CAT_SERVICE_URL:http://192.168.194.250:8080/api}
+  token: ${CAT_SERVICE_TOKEN:}
+
+# ===================================================================
+# Kafka
+# ===================================================================
+
+kafka:
+  broker: ${KAFKA_BROKER:192.168.194.250:9092}
+  topic: ${KAFKA_TOPIC:tp-final-topic-pendiente}
+
+# ===================================================================
+# Configuración del proxy del alumno
+# ===================================================================
+
+proxy:
+  base-url: ${PROXY_BASE_URL:http://localhost:8081/api/proxy}
+  token: ${PROXY_TOKEN:changeme}
+
+# ===================================================================
+# Propiedades específicas de la app
+# ===================================================================
+
+app:
+  session-timeout-minutes: 30

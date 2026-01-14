@@ -1,0 +1,65 @@
+<div class="d-flex justify-content-center">
+  <div class="col-8">
+    @if (asiento(); as asientoRef) {
+      <div>
+        <h2 data-cy="asientoDetailsHeading"><span jhiTranslate="backendCatedraApp.asiento.detail.title">Asiento</span></h2>
+
+        <hr />
+
+        <jhi-alert-error />
+
+        <jhi-alert />
+
+        <dl class="row-md jh-entity-details">
+          <dt><span jhiTranslate="global.field.id">ID</span></dt>
+          <dd>
+            <span>{{ asientoRef.id }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.asiento.fila">Fila</span></dt>
+          <dd>
+            <span>{{ asientoRef.fila }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.asiento.columna">Columna</span></dt>
+          <dd>
+            <span>{{ asientoRef.columna }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.asiento.estado">Estado</span></dt>
+          <dd>
+            <span [jhiTranslate]="'backendCatedraApp.AsientoEstado.' + (asientoRef.estado ?? 'null')">{{
+              { null: '', LIBRE: 'LIBRE', BLOQUEADO: 'BLOQUEADO', OCUPADO: 'OCUPADO' }[asientoRef.estado ?? 'null']
+            }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.asiento.personaActual">Persona Actual</span></dt>
+          <dd>
+            <span>{{ asientoRef.personaActual }}</span>
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.asiento.evento">Evento</span></dt>
+          <dd>
+            @if (asiento()!.evento) {
+              <div>
+                <a [routerLink]="['/evento', asiento()!.evento?.id, 'view']">{{ asientoRef.evento?.titulo }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span jhiTranslate="backendCatedraApp.asiento.ventas">Ventas</span></dt>
+          <dd>
+            @for (ventas of asientoRef.ventas; track $index; let last = $last) {
+              <span>
+                <a [routerLink]="['/venta', ventas.id, 'view']">{{ ventas?.id }}</a
+                >{{ last ? '' : ', ' }}
+              </span>
+            }
+          </dd>
+        </dl>
+
+        <button type="submit" (click)="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
+          <fa-icon icon="arrow-left"></fa-icon>&nbsp;<span jhiTranslate="entity.action.back">Volver</span>
+        </button>
+
+        <button type="button" [routerLink]="['/asiento', asientoRef.id, 'edit']" class="btn btn-primary">
+          <fa-icon icon="pencil-alt"></fa-icon>&nbsp;<span jhiTranslate="entity.action.edit">Editar</span>
+        </button>
+      </div>
+    }
+  </div>
+</div>
